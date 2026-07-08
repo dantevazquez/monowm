@@ -1,21 +1,22 @@
 #include "appicons.h"
+#include "bar.h"
+#include "keys.h"
 #include <X11/X.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/keysym.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
-#define MAX_WINDOWS 9
-#define LEMONBAR_HEIGHT 24
-#define MOD Mod4Mask // Super key
+#include "config.h"
 
-typedef struct {
-  Window win;
-  int active;
-} Client;
+#if BAR_ENABLED
+#define LEMONBAR_HEIGHT BAR_HEIGHT
+#else
+#define LEMONBAR_HEIGHT 0
+#endif
 
 Display *dpy;
 Window root;
@@ -25,49 +26,20 @@ int screen_width, screen_height;
 Atom net_wm_window_type, net_wm_window_type_dock;
 
 // Generic error handler to prevent crashes on BadWindow, etc.
-int x_error_handler(Display *d, XErrorEvent *e) { return 0; }
-
-const char *get_client_icon(Window w) {
-  XClassHint ch;
-  const char *icon = get_default_icon();
-
-  if (XGetClassHint(dpy, w, &ch)) {
-    if (ch.res_class) {
-      icon = get_icon_by_name(ch.res_class);
-    }
-    if (ch.res_class)
-      XFree(ch.res_name);
-    if (ch.res_class)
-      XFree(ch.res_class);
-  }
-  return icon;
+int x_error_handler(Display *d, XErrorEvent *e) {
+  (void)d;
+  (void)e;
+  return 0;
 }
 
-void update_bar() {
-  printf("%%{l}");
-  int count = 0;
-  for (int i = 0; i < MAX_WINDOWS; i++) {
-    if (clients[i].active) {
-      count++;
-      const char *icon = get_client_icon(clients[i].win);
-
-      if (i == current_client) {
-        // Active window: Highlight
-        printf(" %%{F#ffffff}%%{B#555555} %s %%{B-}%%{F-} ", icon);
-      } else {
-        // Inactive window
-        printf(" %%{F#aaaaaa} %s %%{F-} ", icon);
-      }
-    }
-  }
-  if (count == 0) {
-    printf(" No windows ");
-  }
-  printf("\n");
-  fflush(stdout);
+void handle_sigusr1(int sig) {
+  (void)sig;
+  bar_trigger_update();
 }
 
+// Window Manager Core
 void setup() {
+  signal(SIGUSR1, handle_sigusr1);
   XSetErrorHandler(x_error_handler);
   dpy = XOpenDisplay(NULL);
   if (!dpy) {
@@ -91,18 +63,15 @@ void setup() {
   // Select events
   XSelectInput(dpy, root, SubstructureRedirectMask | SubstructureNotifyMask);
 
-  // Grab keys (Super + 1-9 and Super + Q)
-  for (int i = 0; i < 9; i++) {
-    XGrabKey(dpy, XKeysymToKeycode(dpy, XK_1 + i), MOD, root, True,
-             GrabModeAsync, GrabModeAsync);
-  }
-  XGrabKey(dpy, XKeysymToKeycode(dpy, XK_q), MOD, root, True, GrabModeAsync,
-           GrabModeAsync);
-  XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Tab), Mod1Mask, root, True,
-           GrabModeAsync, GrabModeAsync);
+  // Grab keybindings
+  keys_grab(dpy, root);
 
   XSync(dpy, False);
-  update_bar();
+
+  // Start the periodic bar refresh thread
+  bar_start_refresh_thread(clients, MAX_WINDOWS, &current_client, dpy);
+
+  update_bar(clients, MAX_WINDOWS, current_client, dpy);
 }
 
 int add_client(Window w) {
@@ -120,18 +89,21 @@ void focus_client(int idx) {
   if (idx < 0 || idx >= MAX_WINDOWS || !clients[idx].active)
     return;
 
-  // Hide current window (only if it's different and valid)
-  if (current_client >= 0 && current_client < MAX_WINDOWS &&
-      clients[current_client].active && current_client != idx) {
-    XUnmapWindow(dpy, clients[current_client].win);
-  }
-
-  // Show and focus new window
+  int old_client = current_client;
   current_client = idx;
+
+  // Map and raise the new window FIRST to avoid flicker
   XMapWindow(dpy, clients[idx].win);
   XRaiseWindow(dpy, clients[idx].win);
   XSetInputFocus(dpy, clients[idx].win, RevertToPointerRoot, CurrentTime);
-  update_bar();
+
+  // Now hide the old window (it's already covered by the new one)
+  if (old_client >= 0 && old_client < MAX_WINDOWS &&
+      clients[old_client].active && old_client != idx) {
+    XUnmapWindow(dpy, clients[old_client].win);
+  }
+
+  update_bar(clients, MAX_WINDOWS, current_client, dpy);
 }
 
 void remove_client(int idx) {
@@ -148,23 +120,19 @@ void remove_client(int idx) {
 
   // Adjust current_client
   if (current_client == idx) {
-    // Focused window was removed. Try to focus the same index (next window
-    // shifted in) or the previous one if that was the last window.
     if (clients[idx].active) {
       focus_client(idx);
     } else if (idx > 0 && clients[idx - 1].active) {
       focus_client(idx - 1);
     } else {
       current_client = -1;
-      update_bar();
+      update_bar(clients, MAX_WINDOWS, current_client, dpy);
     }
   } else if (current_client > idx) {
-    // Focused window shifted down
     current_client--;
-    update_bar();
+    update_bar(clients, MAX_WINDOWS, current_client, dpy);
   } else {
-    // Focused window was before the removed one, just update bar
-    update_bar();
+    update_bar(clients, MAX_WINDOWS, current_client, dpy);
   }
 }
 
@@ -242,36 +210,6 @@ void handle_destroy_notify(XDestroyWindowEvent *e) {
   }
 }
 
-void handle_key_press(XKeyEvent *e) {
-  KeySym key = XLookupKeysym(e, 0);
-
-  // Super + 1-9: Switch windows
-  if (key >= XK_1 && key <= XK_9) {
-    int idx = key - XK_1;
-    focus_client(idx);
-  }
-  // Super + Q: Close current window
-  else if (key == XK_q) {
-    if (current_client >= 0 && clients[current_client].active) {
-      XKillClient(dpy, clients[current_client].win);
-    }
-  } else if (key == XK_Tab) {
-
-    if (current_client < 0)
-      return;
-
-    int next_idx = current_client + 1;
-    // Wrap index to 0 if user was in the last tab
-    if (next_idx >= MAX_WINDOWS || !clients[next_idx].active) {
-      next_idx = 0;
-    }
-    // If the current client is not active
-    if (next_idx != current_client && clients[next_idx].active) {
-      focus_client(next_idx);
-    }
-  }
-}
-
 int main() {
   setup();
 
@@ -287,7 +225,7 @@ int main() {
       handle_destroy_notify(&ev.xdestroywindow);
       break;
     case KeyPress:
-      handle_key_press(&ev.xkey);
+      keys_handle(dpy, &ev.xkey);
       break;
     }
   }
