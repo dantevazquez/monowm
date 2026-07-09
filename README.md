@@ -8,9 +8,9 @@ Lightweight window manger for x that uses under 3mb of ram. This window manager 
 
 1. Install build dependencies: libx11, a compiler like gcc, make, and pkg-config. If youre on nix, you can run nix-shell to build.
 2. Install recommened dependencies: sxhkd (Needed to use keybinds), xorg-server (or another X server)
-3. Clone using git clone https://github.com/dantevazquez/monowm.git
-4. Run make install
-5. Run startx
+3. Clone using `git clone https://github.com/dantevazquez/monowm.git`
+4. Run `make install
+5`. Run `startx`
 
 Optional dependencies:
 * `alttab` (to switch tabs)
@@ -18,7 +18,7 @@ Optional dependencies:
 * `pipewire` (for volume)
 * `brightnessctl` (to control screen brightness)
 * `dunst` (to see volume changes and low battery notifications)
-* lemonbarxft (Built in bar)
+* `lemonbarxft` (Built in bar)
 * A nerdfont of your choice (for the bar)
 
 ## Configuration
