@@ -7,6 +7,7 @@
 typedef struct {
   Window win;
   int active;
+  int ignore_unmap;
 } Client;
 
 // Get the icon string for a client window

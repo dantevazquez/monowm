@@ -11,7 +11,7 @@ if ! command -v monowm >/dev/null 2>&1; then
     fi
 fi
 
-if command -v lemonbar >/dev/null 2>&1; then
+if command -v lemonbar >/dev/null 2>&1 && "$MONOWM_EXEC" --is-bar-enabled; then
     exec "$MONOWM_EXEC" | lemonbar -p -f "JetBrainsMono Nerd Font:size=12"
 else
     exec "$MONOWM_EXEC"

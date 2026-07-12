@@ -141,6 +141,7 @@ void setup() {
   for (int i = 0; i < MAX_WINDOWS; i++) {
     clients[i].win = None;
     clients[i].active = 0;
+    clients[i].ignore_unmap = 0;
   }
 
   // Select events
@@ -162,6 +163,7 @@ int add_client(Window w) {
     if (!clients[i].active) {
       clients[i].win = w;
       clients[i].active = 1;
+      clients[i].ignore_unmap = 0;
       update_client_list();
       return i;
     }
@@ -191,6 +193,7 @@ void focus_client(int idx) {
 #if !KEEP_INACTIVE_MAPPED
   if (old_client >= 0 && old_client < MAX_WINDOWS &&
       clients[old_client].active && old_client != idx) {
+    clients[old_client].ignore_unmap = 1;
     XUnmapWindow(dpy, clients[old_client].win);
   }
 #endif
@@ -325,7 +328,28 @@ void handle_destroy_notify(XDestroyWindowEvent *e) {
   }
 }
 
-int main() {
+void handle_unmap_notify(XUnmapEvent *e) {
+  for (int i = 0; i < MAX_WINDOWS; i++) {
+    if (clients[i].active && clients[i].win == e->window) {
+      if (clients[i].ignore_unmap) {
+        clients[i].ignore_unmap = 0;
+      } else {
+        remove_client(i);
+      }
+      break;
+    }
+  }
+}
+
+int main(int argc, char *argv[]) {
+  if (argc > 1 && strcmp(argv[1], "--is-bar-enabled") == 0) {
+#if BAR_ENABLED
+    return 0;
+#else
+    return 1;
+#endif
+  }
+
   setup();
 
   XEvent ev;
@@ -350,6 +374,9 @@ int main() {
       break;
     case DestroyNotify:
       handle_destroy_notify(&ev.xdestroywindow);
+      break;
+    case UnmapNotify:
+      handle_unmap_notify(&ev.xunmap);
       break;
     case KeyPress:
       keys_handle(dpy, &ev.xkey);
