@@ -27,9 +27,33 @@ sudo dnf groupinstall "Development Tools" && sudo dnf install libX11-devel pkgco
 ```
 
 **NixOS:**
-You can use the provided [shell.nix](file:///home/dante/monowm/shell.nix) to enter a development shell with all build dependencies:
+You can use the provided [shell.nix](shell.nix) to enter a development shell with all build dependencies:
 ```bash
 nix-shell
+```
+
+#### Xorg Server (Required Runtime)
+Since `monowm` is an X11 window manager, you will need the Xorg server and `xinit` (for `startx`) installed:
+
+**Arch-based:**
+```bash
+sudo pacman -S xorg-server xorg-xinit
+```
+
+**Debian/Ubuntu-based:**
+```bash
+sudo apt update && sudo apt install xserver-xorg xinit
+```
+
+**Fedora-based:**
+```bash
+sudo dnf install xorg-x11-server-Xorg xinit
+```
+
+**NixOS:**
+Enable the X11 windowing system in your `/etc/nixos/configuration.nix`:
+```nix
+services.xserver.enable = true;
 ```
 
 #### Optional Runtime Dependencies
@@ -76,6 +100,6 @@ These are recommended for the default configuration:
 | `XF86MonBrightnessDown` | Decrease brightness | `keybind = XF86MonBrightnessDown : ~/.local/bin/monowm-brightness down` |
 
 ## Configuration
-* Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](file:///home/dante/monowm/templates/config.conf)).
-* Additional startup configuration can be customized in `~/.config/monowm/autostart` (see default: [autostart](file:///home/dante/monowm/autostart)).
-* Bar configuration can be configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](file:///home/dante/monowm/templates/bar.conf)).
+* Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)).
+* Additional startup configuration can be customized in `~/.config/monowm/autostart` (see default: [autostart](autostart)).
+* Bar configuration can be configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](templates/bar.conf)).
