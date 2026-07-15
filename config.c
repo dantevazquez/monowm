@@ -28,20 +28,24 @@ int parse_key_combo(const char *combo_str, unsigned int *mods_out, KeySym *keysy
     unsigned int mods = 0;
     char *token = strtok(buf, "+");
     char *last_token = NULL;
+    unsigned int this_mod = 0;
 
     while (token != NULL) {
         last_token = trim(token);
+        this_mod = 0;
+        if (strcasecmp(last_token, "super") == 0 || strcasecmp(last_token, "mod4") == 0) {
+            this_mod = Mod4Mask;
+        } else if (strcasecmp(last_token, "shift") == 0) {
+            this_mod = ShiftMask;
+        } else if (strcasecmp(last_token, "control") == 0 || strcasecmp(last_token, "ctrl") == 0) {
+            this_mod = ControlMask;
+        } else if (strcasecmp(last_token, "alt") == 0 || strcasecmp(last_token, "mod1") == 0) {
+            this_mod = Mod1Mask;
+        }
+
         char *next_token = strtok(NULL, "+");
-        if (next_token != NULL) {
-            if (strcasecmp(last_token, "super") == 0 || strcasecmp(last_token, "mod4") == 0) {
-                mods |= Mod4Mask;
-            } else if (strcasecmp(last_token, "shift") == 0) {
-                mods |= ShiftMask;
-            } else if (strcasecmp(last_token, "control") == 0 || strcasecmp(last_token, "ctrl") == 0) {
-                mods |= ControlMask;
-            } else if (strcasecmp(last_token, "alt") == 0 || strcasecmp(last_token, "mod1") == 0) {
-                mods |= Mod1Mask;
-            }
+        if (next_token != NULL || this_mod != 0) {
+            mods |= this_mod;
             token = next_token;
         } else {
             break;
@@ -49,6 +53,13 @@ int parse_key_combo(const char *combo_str, unsigned int *mods_out, KeySym *keysy
     }
 
     if (!last_token) return 0;
+
+    if (this_mod != 0) {
+        // The last token was a modifier, so the entire combo is modifiers only
+        *mods_out = mods;
+        *keysym_out = NoSymbol;
+        return 1;
+    }
 
     KeySym sym = XStringToKeysym(last_token);
     if (sym == NoSymbol) {
