@@ -65,6 +65,7 @@ These are recommended for the default configuration:
 * [brightnessctl](https://github.com/Hummer12007/brightnessctl) (to control screen brightness)
 * [dunst](https://github.com/dunst-project/dunst) (to see volume changes and low battery notifications)
 * [lemonbarxft](https://github.com/drscream/lemonbar-xft) (Built-in bar)
+* [feh](https://github.com/derf/feh) (For Background)
 * A Nerd Font of your choice (for the bar icons)
 
 ### Installation Steps
