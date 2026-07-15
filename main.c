@@ -125,9 +125,11 @@ void reload_config() {
   if (config.bar_enabled && is_command_in_path("lemonbar")) {
     runtime_bar_enabled = 1;
     lemonbar_height = get_scaled_bar_height(dpy);
+    spawn_lemonbar(dpy);
   } else {
     runtime_bar_enabled = 0;
     lemonbar_height = 0;
+    kill_lemonbar();
   }
 
   XUngrabKey(dpy, AnyKey, AnyModifier, root);
@@ -142,6 +144,28 @@ void reload_config() {
 
   bar_trigger_update();
   printf("monowm: configuration reloaded\n");
+}
+
+void toggle_bar() {
+  config.bar_enabled = !config.bar_enabled;
+  if (config.bar_enabled && is_command_in_path("lemonbar")) {
+    runtime_bar_enabled = 1;
+    lemonbar_height = get_scaled_bar_height(dpy);
+    spawn_lemonbar(dpy);
+    bar_start_refresh_thread(clients, config.max_windows, &current_client, dpy);
+  } else {
+    runtime_bar_enabled = 0;
+    lemonbar_height = 0;
+    kill_lemonbar();
+  }
+
+  for (int i = 0; i < config.max_windows; i++) {
+    if (clients[i].active) {
+      XMoveResizeWindow(dpy, clients[i].win, 0, lemonbar_height, screen_width,
+                        screen_height - lemonbar_height);
+    }
+  }
+  bar_trigger_update();
 }
 
 void setup() {
@@ -171,6 +195,7 @@ void setup() {
   if (config.bar_enabled && is_command_in_path("lemonbar")) {
     runtime_bar_enabled = 1;
     lemonbar_height = get_scaled_bar_height(dpy);
+    spawn_lemonbar(dpy);
   } else {
     runtime_bar_enabled = 0;
     lemonbar_height = 0;
@@ -464,6 +489,7 @@ int main(int argc, char *argv[]) {
   }
 
   XCloseDisplay(dpy);
+  kill_lemonbar();
   if (clients) free(clients);
   return 0;
 }

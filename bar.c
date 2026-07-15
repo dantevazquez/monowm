@@ -11,6 +11,11 @@
 #include <unistd.h>
 #include <poll.h>
 #include <fcntl.h>
+#include <signal.h>
+#include <sys/wait.h>
+
+extern int get_scaled_bar_height(Display *d);
+extern int get_scaled_font_size(Display *d);
 
 static pthread_mutex_t bar_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -20,6 +25,51 @@ static Client *bar_clients;
 static int bar_max_windows;
 static int *bar_current_client_ptr;
 static Display *bar_dpy;
+
+int lemonbar_pipe_fd = -1;
+pid_t lemonbar_pid = -1;
+
+void spawn_lemonbar(Display *d) {
+  if (lemonbar_pid > 0) return;
+
+  int pipefd[2];
+  if (pipe(pipefd) != 0) return;
+
+  lemonbar_pid = fork();
+  if (lemonbar_pid == 0) {
+    dup2(pipefd[0], STDIN_FILENO);
+    close(pipefd[0]);
+    close(pipefd[1]);
+
+    char geom_str[64];
+    snprintf(geom_str, sizeof(geom_str), "x%d", get_scaled_bar_height(d));
+    char font_str[256];
+    snprintf(font_str, sizeof(font_str), "%s:size=%d", config.bar_font_name, config.bar_font_size);
+
+    execlp("lemonbar", "lemonbar", "-p", "-g", geom_str, "-f", font_str, NULL);
+    _exit(1);
+  } else if (lemonbar_pid > 0) {
+    close(pipefd[0]);
+    lemonbar_pipe_fd = pipefd[1];
+
+    int flags = fcntl(lemonbar_pipe_fd, F_GETFL, 0);
+    if (flags != -1) {
+      fcntl(lemonbar_pipe_fd, F_SETFL, flags | O_NONBLOCK);
+    }
+  }
+}
+
+void kill_lemonbar(void) {
+  if (lemonbar_pid > 0) {
+    kill(lemonbar_pid, SIGTERM);
+    waitpid(lemonbar_pid, NULL, 0);
+    lemonbar_pid = -1;
+  }
+  if (lemonbar_pipe_fd != -1) {
+    close(lemonbar_pipe_fd);
+    lemonbar_pipe_fd = -1;
+  }
+}
 
 const char *get_client_icon(Display *dpy, Window w) {
   XClassHint ch;
@@ -252,8 +302,14 @@ static void compose_bar(Client *clients, int max_windows, int current_client,
   (void)c_off;
   (void)r_off;
 
-  printf("%%{l}%s%%{c}%s%%{r}%s\n", left, center, right);
-  fflush(stdout);
+  if (lemonbar_pipe_fd != -1) {
+    char bar_str[2048];
+    int len = snprintf(bar_str, sizeof(bar_str), "%%{l}%s%%{c}%s%%{r}%s\n", left, center, right);
+    if (len > 0) {
+      ssize_t n = write(lemonbar_pipe_fd, bar_str, len);
+      (void)n;
+    }
+  }
 
   pthread_mutex_unlock(&bar_mutex);
 }
@@ -290,7 +346,11 @@ static void *bar_refresh_thread(void *arg) {
 
 void bar_start_refresh_thread(Client *clients, int max_windows,
                               int *current_client_ptr, Display *dpy) {
+  static int thread_started = 0;
   if (!runtime_bar_enabled) {
+    return;
+  }
+  if (thread_started) {
     return;
   }
   bar_clients = clients;
@@ -308,6 +368,7 @@ void bar_start_refresh_thread(Client *clients, int max_windows,
   pthread_t refresh_tid;
   pthread_create(&refresh_tid, NULL, bar_refresh_thread, NULL);
   pthread_detach(refresh_tid);
+  thread_started = 1;
 }
 
 void bar_trigger_update(void) {

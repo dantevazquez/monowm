@@ -34,6 +34,7 @@ typedef struct {
     int cycle_enabled;
     char bind_switch_window_mod[64];
     char bind_reload[64];
+    char bind_toggle_bar[64];
 
     // Autostart Commands
     char autostarts[MAX_AUTOSTARTS][512];

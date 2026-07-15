@@ -12,6 +12,7 @@ extern Client *clients;
 void focus_client(int idx);
 void reload_config(void);
 void spawn(const char *cmd);
+void toggle_bar(void);
 
 
 void keys_grab(Display *dpy, Window root) {
@@ -32,6 +33,12 @@ void keys_grab(Display *dpy, Window root) {
 
   // 3. Grab reload keybind
   if (parse_key_combo(config.bind_reload, &mods, &sym)) {
+    XGrabKey(dpy, XKeysymToKeycode(dpy, sym), mods, root, True, GrabModeAsync,
+             GrabModeAsync);
+  }
+
+  // 3.5. Grab toggle bar keybind
+  if (parse_key_combo(config.bind_toggle_bar, &mods, &sym)) {
     XGrabKey(dpy, XKeysymToKeycode(dpy, sym), mods, root, True, GrabModeAsync,
              GrabModeAsync);
   }
@@ -120,6 +127,14 @@ void keys_handle(Display *dpy, XKeyEvent *e) {
   if (parse_key_combo(config.bind_reload, &mods, &sym)) {
     if (key == sym && state == mods) {
       reload_config();
+      return;
+    }
+  }
+
+  // 3.5. Toggle Bar Keybind
+  if (parse_key_combo(config.bind_toggle_bar, &mods, &sym)) {
+    if (key == sym && state == mods) {
+      toggle_bar();
       return;
     }
   }

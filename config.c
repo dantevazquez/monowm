@@ -72,6 +72,7 @@ static void config_set_defaults(void) {
     config.cycle_enabled = 0;
     strcpy(config.bind_switch_window_mod, "super+Shift");
     strcpy(config.bind_reload, "super+Shift+r");
+    strcpy(config.bind_toggle_bar, "super+Shift+b");
     config.autostart_count = 0;
     config.keybind_count = 0;
 
@@ -149,6 +150,8 @@ static void load_config_file(const char *path) {
             strncpy(config.bind_switch_window_mod, val, sizeof(config.bind_switch_window_mod) - 1);
         } else if (strcmp(key, "bind_reload") == 0) {
             strncpy(config.bind_reload, val, sizeof(config.bind_reload) - 1);
+        } else if (strcmp(key, "bind_toggle_bar") == 0) {
+            strncpy(config.bind_toggle_bar, val, sizeof(config.bind_toggle_bar) - 1);
         }
         // Run commands
         else if (strcmp(key, "run") == 0) {
