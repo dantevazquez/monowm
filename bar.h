@@ -24,6 +24,12 @@ void bar_start_refresh_thread(Client *clients, int max_windows,
 // Trigger an immediate update of the bar (async-signal-safe)
 void bar_trigger_update(void);
 
+void spawn_lemonbar(Display *d);
+void kill_lemonbar(void);
+
 extern int runtime_bar_enabled;
+extern int lemonbar_pipe_fd;
+extern pid_t lemonbar_pid;
+
 
 #endif

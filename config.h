@@ -4,107 +4,96 @@
 #include <X11/X.h>
 #include <X11/keysym.h>
 
-// General Settings
-#define BAR_ENABLED 1 // 1 to enable bar, 0 to disable
-#define MAX_WINDOWS 9 //Number of windows that can be open at the same time
-#define BAR_HEIGHT 24 //Height of lemonbar
-#define BAR_FONT_NAME "JetBrainsMono Nerd Font"
-#define BAR_FONT_SIZE 6
-#define MOD_KEY Mod4Mask //Super
-
-// Keybindings Configuration
-#define KEY_QUIT XK_q
-
-// Modifier for switching to specific windows (1-9)
-#define KEY_SWITCH_MOD (MOD_KEY | ShiftMask)
-
-//For the window switcher. Will only work if WINDOW_SWITCHER_ENABLED = 1
-#define KEY_SWITCHER XK_Tab
-
-// Window Switcher Configuration (Internal Alt-Tab)
-// 1 = Enabled (WM grabs and handles KEY_SWITCHER)
-// 0 = Disabled (allows external tools like sxhkd/alttab to grab KEY_SWITCHER)
-#define WINDOW_SWITCHER_ENABLED 0
-
-// Bar Appearance
-#define BAR_COLOR_ACTIVE_FG "#ffffff"
-#define BAR_COLOR_ACTIVE_BG "#555555"
-#define BAR_COLOR_INACTIVE_FG "#aaaaaa"
-#define BAR_COLOR_INACTIVE_BG "-"
-
-// Bar Update Interval (seconds) - how often time/battery refresh
-#define BAR_UPDATE_INTERVAL 5
-
-// ============================================================
-// Bar Module Configuration
-// ============================================================
-// Each module can be enabled/disabled and positioned.
-// Positions: 'l' = left, 'c' = center, 'r' = right
-// ============================================================
-
-// --- Windows Module (app icons) ---
-#define BAR_SHOW_WINDOWS 1
-#define BAR_WINDOWS_POSITION 'l'
-
-// --- Time Module ---
-#define BAR_SHOW_TIME 1
-#define BAR_TIME_POSITION 'r'
-#define BAR_TIME_FORMAT "%I:%M %p"  // strftime format (e.g. "03:45 PM")
-
-// --- Battery Module ---
-#define BAR_SHOW_BATTERY 1
-#define BAR_BATTERY_POSITION 'r'
-#define BAR_BATTERY_PATH "/sys/class/power_supply/BAT0"
-
-// Battery Icons (Font Awesome - Nerd Font)
-#define BAR_BATTERY_ICON_FULL ""
-#define BAR_BATTERY_ICON_75 ""
-#define BAR_BATTERY_ICON_50 ""
-#define BAR_BATTERY_ICON_25 ""
-#define BAR_BATTERY_ICON_EMPTY ""
-#define BAR_BATTERY_ICON_CHARGING ""
-
-// --- Volume Module ---
-#define BAR_SHOW_VOLUME 0
-#define BAR_VOLUME_POSITION 'r'
-
-// Command that prints volume percentage as a number (0-100) to stdout
-#define BAR_VOLUME_CMD "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}'"
-// Command that prints "yes" if muted, anything else if not
-#define BAR_VOLUME_MUTE_CMD "wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q MUTED && echo \"yes\" || echo \"no\""
-
-// Volume Icons (Nerd Font)
-#define BAR_VOLUME_ICON_HIGH "󰕾"
-#define BAR_VOLUME_ICON_MED "󰖀"
-#define BAR_VOLUME_ICON_LOW "󰕿"
-#define BAR_VOLUME_ICON_MUTE "󰝟"
-
-// Prevent bright white flash when opening windows (I recommend not to change)
-// 0 = Disabled
-// 1 = Solid black background
-// 2 = Undefined background (None) - keeps previous window content visible until client draws
+// Advanced Compile-time Settings (not configurable at runtime)
 #define CLIENT_BG_PREVENT_FLASH 2
-
-// Keep inactive windows mapped in the background to prevent black flashes when closing windows
-// I recommend not to change
 #define KEEP_INACTIVE_MAPPED 1
 
-// Icon Configuration
+#define MAX_APP_ICONS 64
+#define MAX_KEYBINDS 128
+#define MAX_AUTOSTARTS 64
+
 typedef struct {
-    const char *name;
-    const char *icon;
+    char name[64];
+    char icon[32];
 } AppIcon;
 
-static const char __attribute__((unused)) *DEFAULT_ICON_STR = "";
+typedef struct {
+    char combo[128];
+    char cmd[512];
+    unsigned int modifiers;
+    KeySym keysym;
+} KeyBind;
 
-//Add icons for your programs here
-static const AppIcon __attribute__((unused)) APP_ICONS[] = {
-    {"firefox", ""},
-    {"st", ""},
-    {"alacritty", ""},
-    {"kitty", ""},
-    {"chromium", ""},
-    {NULL, NULL} // Terminator
-};
+typedef struct {
+    // General Settings
+    int max_windows;
+
+    // Internal Window Manager Keybindings
+    char bind_quit[64];
+    char bind_cycle[64];
+    int cycle_enabled;
+    char bind_switch_window_mod[64];
+    char bind_reload[64];
+    char bind_toggle_bar[64];
+
+    // Autostart Commands
+    char autostarts[MAX_AUTOSTARTS][512];
+    int autostart_count;
+
+    // Custom Keybindings
+    KeyBind keybinds[MAX_KEYBINDS];
+    int keybind_count;
+
+    // Bar Settings
+    int bar_enabled;
+    int bar_height;
+    char bar_font_name[128];
+    int bar_font_size;
+    int bar_update_interval;
+    char bar_position;
+
+    // Bar Appearance
+    char bar_color_active_fg[32];
+    char bar_color_active_bg[32];
+    char bar_color_inactive_fg[32];
+    char bar_color_inactive_bg[32];
+
+    // Bar Modules Setup
+    int bar_show_windows;
+    char bar_windows_position;
+
+    int bar_show_time;
+    char bar_time_position;
+    char bar_time_format[64];
+
+    int bar_show_battery;
+    char bar_battery_position;
+    char bar_battery_path[256];
+    char bar_battery_icon_full[32];
+    char bar_battery_icon_75[32];
+    char bar_battery_icon_50[32];
+    char bar_battery_icon_25[32];
+    char bar_battery_icon_empty[32];
+    char bar_battery_icon_charging[32];
+
+    int bar_show_volume;
+    char bar_volume_position;
+    char bar_volume_cmd[256];
+    char bar_volume_mute_cmd[256];
+    char bar_volume_icon_high[32];
+    char bar_volume_icon_med[32];
+    char bar_volume_icon_low[32];
+    char bar_volume_icon_mute[32];
+
+    // App Icons
+    char default_icon_str[32];
+    AppIcon app_icons[MAX_APP_ICONS];
+    int app_icon_count;
+} Config;
+
+extern Config config;
+
+int parse_key_combo(const char *combo_str, unsigned int *mods_out, KeySym *keysym_out);
+void config_load(void);
 
 #endif

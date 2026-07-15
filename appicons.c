@@ -5,20 +5,21 @@
 #include "config.h"
 
 const char* get_default_icon(){
-    return DEFAULT_ICON_STR;
+    return config.default_icon_str;
 }
 
 const char* get_icon_by_name(const char *name){
 
-    if(!name) return DEFAULT_ICON_STR;
+    if(!name) return config.default_icon_str;
 
-    for(int i = 0; APP_ICONS[i].name != NULL; i++){
-        if(strcasestr(name, APP_ICONS[i].name) != NULL){
-            return APP_ICONS[i].icon;
+    for(int i = 0; i < config.app_icon_count; i++){
+        if(strcasestr(name, config.app_icons[i].name) != NULL){
+            return config.app_icons[i].icon;
         }
     }
-    return DEFAULT_ICON_STR;
+    return config.default_icon_str;
 }
+
 
 
 

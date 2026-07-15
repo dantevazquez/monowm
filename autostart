@@ -7,49 +7,16 @@
 # ==============================================================================
 
 # Display Settings
-# Set these to your preferred monitor output and resolution
 # DISPLAY_OUTPUT="eDP-1"
-# RESOLUTION="1920x1200"
-# Screen Locker and Power Management
-# Define the idle timeout in seconds (300 seconds = 5 minutes)
-# IDLE_TIME=300
-
+# RESOLUTION="1920x1080"
+# DPI="96" #For high resolutions increase this for bigger text
+# IDLE_TIME=300 # Time it takes for screen to sleep in seconds (300 seconds = 5 minutes)
+#
+# xrandr --dpi $DPI
 # xset s on
 # xset s $IDLE_TIME
 # xset +dpms
 # xset dpms $IDLE_TIME $IDLE_TIME $IDLE_TIME
-
-# Apply display resolution, Uncomment for custom resolution
 # if command -v xrandr >/dev/null 2>&1; then
 #     xrandr --output "$DISPLAY_OUTPUT" --mode "$RESOLUTION"
 # fi
-
-# Start Keyring Daemon
-# eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh)
-# export SSH_AUTH_SOCK
-# export SECRET_SERVICE_SOCK
-
-# Polkit Authentication Agent
-# Searches common system paths to support NixOS, Arch, Debian, Fedora, etc.
-# POLKIT_AGENTS=(
-#     "/run/current-system/sw/libexec/polkit-gnome-authentication-agent-1"
-#     "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
-#     "/usr/libexec/polkit-gnome-authentication-agent-1"
-#     "/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1"
-# )
-# for agent in "${POLKIT_AGENTS[@]}"; do
-#     if [ -f "$agent" ]; then
-#         "$agent" &
-#         break
-#     fi
-# done
-
-# Start background programs
-sxhkd & # Hotkey Daemon
-# alttab -w 1 -mk Super_L -t 224x256 -i 64x64 -font "xft:sans-20" & # Recommended Tab Switcher
-# dbus-update-activation-environment --systemd --all
-# dunst & # Notification Daemon
-
-# Add your custom startup commands here:
-# feh --bg-fill /path/to/wallpaper.jpg &
-# picom &

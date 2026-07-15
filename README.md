@@ -4,121 +4,102 @@ Lightweight window manger for x that uses under 3mb of ram. This window manager 
 
 ![](demo.gif)
 
-
-
 ## How to install
 
-### Inside tty, do the following
+### Dependencies
 
-1. Install build dependencies: libx11, a compiler like gcc, make, and pkg-config. If youre on nix, you can run nix-shell to build.
-2. Install recommened dependencies: sxhkd (Needed to use keybinds), xorg-server (or another X server)
-3. Clone using `git clone https://github.com/dantevazquez/monowm.git`
-4. Run `make install`
-5. Run `startx`
+#### Build Dependencies
+Install the required tools and X11 development headers for your distribution:
 
-Optional dependencies:
-* `alttab` (to switch tabs)
-* `dmenu` (to launch applications)
-* `pipewire` (for volume)
-* `brightnessctl` (to control screen brightness)
-* `dunst` (to see volume changes and low battery notifications)
-* `lemonbarxft` (Built in bar. If your package manager does not have it, you can build the single c file from [here](https://github.com/drscream/lemonbar-xft))
-* A nerdfont of your choice (for the bar)
+**Arch-based:**
+```bash
+sudo pacman -S base-devel libx11 pkgconf
+```
+
+**Debian/Ubuntu-based:**
+```bash
+sudo apt update && sudo apt install build-essential libx11-dev pkg-config
+```
+
+**Fedora-based:**
+```bash
+sudo dnf groupinstall "Development Tools" && sudo dnf install libX11-devel pkgconf-pkg-config
+```
+
+**NixOS:**
+You can use the provided [shell.nix](shell.nix) to enter a development shell with all build dependencies:
+```bash
+nix-shell
+```
+
+#### Xorg Server (Required Runtime)
+Since `monowm` is an X11 window manager, you will need the Xorg server and `xinit` (for `startx`) installed:
+
+**Arch-based:**
+```bash
+sudo pacman -S xorg-server xorg-xinit
+```
+
+**Debian/Ubuntu-based:**
+```bash
+sudo apt update && sudo apt install xserver-xorg xinit
+```
+
+**Fedora-based:**
+```bash
+sudo dnf install xorg-x11-server-Xorg xinit
+```
+
+**NixOS:**
+Enable the X11 windowing system in your `/etc/nixos/configuration.nix`:
+```nix
+services.xserver.enable = true;
+```
+
+#### Optional Runtime Dependencies
+These are recommended for the default configuration:
+* [alacritty](https://github.com/alacritty/alacritty) (default terminal)
+* [alttab](https://github.com/sagb/alttab) (to switch tabs)
+* [dmenu](https://tools.suckless.org/dmenu/) (to launch applications)
+* [pipewire](https://pipewire.org/) (for volume control)
+* [brightnessctl](https://github.com/Hummer12007/brightnessctl) (to control screen brightness)
+* [dunst](https://github.com/dunst-project/dunst) (to see volume changes and low battery notifications)
+* [lemonbarxft](https://github.com/drscream/lemonbar-xft) (Built-in bar)
+* A Nerd Font of your choice (for the bar icons)
+
+### Installation Steps
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/dantevazquez/monowm.git
+   cd monowm
+   ```
+2. Build and install:
+   ```bash
+   make install
+   # Or on NixOS: nix-shell --run "make install"
+   ```
+3. Run `startx` or launch from your favorite display manager.
+
+## Default Binds
+
+| Keybinding | Action / Command | Config Option / Keybind Command |
+| :--- | :--- | :--- |
+| `super+q` | Close active window | `bind_quit` |
+| `super+Tab` | Cycle windows (native switcher, disabled by default) | `bind_cycle` |
+| `super+Shift + [1-9]` | Focus window 1-9 | `bind_switch_window_mod` |
+| `super+Shift+r` | Reload configuration | `bind_reload` |
+| `super+Shift+b` | Toggle status bar visibility | `bind_toggle_bar` |
+| `super+Return` | Launch terminal (`alacritty`) | `keybind = super+Return : alacritty` |
+| `super+space` | Launch app launcher (`dmenu`) | `keybind = super+space : dmenu_run -fn 'monospace-14'` |
+| `super+b` | Launch browser (`chromium`) | `keybind = super+b : chromium` |
+| `XF86AudioRaiseVolume` | Increase volume | `keybind = XF86AudioRaiseVolume : ~/.local/bin/monowm-volume up` |
+| `XF86AudioLowerVolume` | Decrease volume | `keybind = XF86AudioLowerVolume : ~/.local/bin/monowm-volume down` |
+| `XF86AudioMute` | Mute/unmute volume | `keybind = XF86AudioMute : ~/.local/bin/monowm-volume mute` |
+| `XF86AudioMicMute` | Mute/unmute microphone | `keybind = XF86AudioMicMute : wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle` |
+| `XF86MonBrightnessUp` | Increase brightness | `keybind = XF86MonBrightnessUp : ~/.local/bin/monowm-brightness up` |
+| `XF86MonBrightnessDown` | Decrease brightness | `keybind = XF86MonBrightnessDown : ~/.local/bin/monowm-brightness down` |
 
 ## Configuration
-
-In config.h, you may configure the followng:
-
-| Configuration Macro | Value | Description |
-| :--- | :--- | :--- |
-| `BAR_ENABLED` | `1` | Enables (`1`) or disables (`0`) the status bar. |
-| `MAX_WINDOWS` | `9` | Specifies the maximum number of windows supported or displayed. |
-| `BAR_HEIGHT` | `24` | Sets the height of the status bar in pixels. |
-| `MOD_KEY` | `Mod4Mask` | Defines the modifier key used for window manager shortcuts. `Mod4Mask` corresponds to the **Super / Windows** key. |
-| `KEY_QUIT` | `XK_q` | Keybinding to quit the window manager (associated with the `q` key). |
-| `KEY_SWITCHER` | `XK_Tab` | Keybinding used for the internal window switcher (associated with the `Tab` key). Only functional if `WINDOW_SWITCHER_ENABLED` is set to `1`. |
-| `WINDOW_SWITCHER_ENABLED` | `0` | Controls the internal Alt-Tab window switcher.<br>• `1`: Enabled (WM grabs and handles `KEY_SWITCHER`).<br>• `0`: Disabled (allows external tools like `sxhkd` or `alttab` to grab the key). |
-
-If you wish to use the included bar it can also be configured in config.h, the code explains how. Once changes are made, compile with make install and restart the window manger using pkill monowm
-
-To add application icons for the bar edit the following
-
-```c
-//Add icons for your programs here
-static const AppIcon __attribute__((unused)) APP_ICONS[] = {
-    {"firefox", ""},
-    {"st", ""},
-    {"alacritty", ""},
-    {"kitty", ""},
-    {"chromium", ""},
-    {NULL, NULL} // Terminator
-};
-```
-
-In .config/sxhkd/sxhkdrc you can edit keybinds. Here are the default:
-
-```ini
-# Terminal emulator
-super + Return
-    alacritty
-
-# App launcher
-super + space
-    dmenu_run -fn 'monospace-14'
-
-# Web browser
-super + b
-    chromium
-
-# Volume Control (using custom script for notification popups)
-XF86AudioRaiseVolume
-    ~/.local/bin/monowm-volume up
-
-XF86AudioLowerVolume
-    ~/.local/bin/monowm-volume down
-
-XF86AudioMute
-    ~/.local/bin/monowm-volume mute
-
-# Mic Mute
-XF86AudioMicMute
-    wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
-
-# Brightness Control
-XF86MonBrightnessUp
-    ~/.local/bin/monowm-brightness up
-
-XF86MonBrightnessDown
-    ~/.local/bin/monowm-brightness down
-```
-
-To add startup programs and change resolution, add them in ~/.config/monowm/autostart
-
-```bash
-#!/bin/bash
-
-# Display Settings
-DISPLAY_OUTPUT="eDP-1"
-RESOLUTION="1920x1200"
-
-# Define the idle timeout in seconds (300 seconds = 5 minutes)
-IDLE_TIME=300
-
-# auto starts
-xset s on
-xset s $IDLE_TIME
-xset +dpms
-xset dpms $IDLE_TIME $IDLE_TIME $IDLE_TIME
-xrandr --output $DISPLAY_OUTPUT --mode $RESOLUTION
-eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh)
-export SSH_AUTH_SOCK
-export SECRET_SERVICE_SOCK
-/run/current-system/sw/libexec/polkit-gnome-authentication-agent-1 &
-sxhkd &
-alttab -w 1 -mk Super_L &
-dbus-update-activation-environment --systemd --all
-dunst &
-# add more startup commands here
-```
-
-Todo: Create a unified config file to configure everything. At the moment, configurations are done in autostart, sxhkdrc, and config.h.
+* Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)).
+* Additional startup configuration and display setttings can be customized in `~/.config/monowm/autostart` (see default: [autostart](autostart)).
+* Bar configuration can be configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](templates/bar.conf)).

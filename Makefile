@@ -19,7 +19,7 @@ LDFLAGS += $(shell $(PKG_CONFIG) --libs $(PACKAGES) 2>/dev/null || echo -L/usr/X
 
 # Target and Sources
 TARGET = monowm
-SRCS = main.c appicons.c bar.c keys.c
+SRCS = main.c appicons.c bar.c keys.c config.c
 OBJS = $(SRCS:.c=.o)
 HEADERS = appicons.h config.h bar.h keys.h
 
@@ -45,8 +45,9 @@ install: $(TARGET)
 	install -m 644 monowm.desktop $(DESTDIR)$(SESSIONDIR)/monowm.desktop
 	install -d $(HOME)/.config/monowm
 	test -f $(HOME)/.config/monowm/autostart || install -m 755 autostart $(HOME)/.config/monowm/autostart
-	install -d $(HOME)/.config/sxhkd
-	test -f $(HOME)/.config/sxhkd/sxhkdrc || install -m 644 sxhkdrc $(HOME)/.config/sxhkd/sxhkdrc
+	test -f $(HOME)/.config/monowm/config.conf || install -m 644 templates/config.conf $(HOME)/.config/monowm/config.conf
+	test -f $(HOME)/.config/monowm/bar.conf || install -m 644 templates/bar.conf $(HOME)/.config/monowm/bar.conf
+	test -f $(HOME)/.config/monowm/bg.png || install -m 644 bg.png $(HOME)/.config/monowm/bg.png
 	echo '#!/bin/sh' > $(HOME)/.xinitrc
 	echo 'exec $(BINDIR)/monowm-start' >> $(HOME)/.xinitrc
 	chmod +x $(HOME)/.xinitrc

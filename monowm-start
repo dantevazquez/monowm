@@ -11,10 +11,4 @@ if ! command -v monowm >/dev/null 2>&1; then
     fi
 fi
 
-if command -v lemonbar >/dev/null 2>&1 && "$MONOWM_EXEC" --is-bar-enabled; then
-    BAR_HEIGHT=$("$MONOWM_EXEC" --get-bar-height)
-    BAR_FONT=$("$MONOWM_EXEC" --get-bar-font)
-    exec "$MONOWM_EXEC" | lemonbar -p -g "x${BAR_HEIGHT}" -f "${BAR_FONT}"
-else
-    exec "$MONOWM_EXEC"
-fi
+exec "$MONOWM_EXEC"
