@@ -25,6 +25,7 @@ int current_client = -1;
 int screen_width, screen_height;
 Atom net_wm_window_type, net_wm_window_type_dock;
 Atom net_supported, net_supporting_wm_check, net_client_list, net_active_window, net_wm_name;
+Atom monowm_reload;
 Window wm_check_win;
 
 int x_error_handler(Display *d, XErrorEvent *e) {
@@ -216,6 +217,7 @@ void setup() {
   net_client_list = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
   net_active_window = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
   net_wm_name = XInternAtom(dpy, "_NET_WM_NAME", False);
+  monowm_reload = XInternAtom(dpy, "_MONOWM_RELOAD", False);
 
   Atom supported[] = {
     net_supported,
@@ -339,6 +341,8 @@ void handle_client_message(XClientMessageEvent *e) {
         break;
       }
     }
+  } else if (e->message_type == monowm_reload) {
+    reload_config();
   }
 }
 
@@ -432,6 +436,27 @@ void handle_unmap_notify(XUnmapEvent *e) {
 
 int main(int argc, char *argv[]) {
   config_load();
+
+  if (argc > 1 && strcmp(argv[1], "--reload") == 0) {
+    Display *d = XOpenDisplay(NULL);
+    if (!d) {
+      fprintf(stderr, "monowm: cannot open display to reload\n");
+      return 1;
+    }
+    Window r = DefaultRootWindow(d);
+    Atom reload_atom = XInternAtom(d, "_MONOWM_RELOAD", False);
+    XEvent ev;
+    memset(&ev, 0, sizeof(ev));
+    ev.xclient.type = ClientMessage;
+    ev.xclient.window = r;
+    ev.xclient.message_type = reload_atom;
+    ev.xclient.format = 32;
+    XSendEvent(d, r, False, SubstructureRedirectMask | SubstructureNotifyMask, &ev);
+    XSync(d, False);
+    XCloseDisplay(d);
+    printf("monowm: sent reload event to window manager\n");
+    return 0;
+  }
 
   if (argc > 1 && strcmp(argv[1], "--is-bar-enabled") == 0) {
     return config.bar_enabled ? 0 : 1;

@@ -20,6 +20,31 @@ static char *trim(char *str) {
     return str;
 }
 
+static char *find_comment(char *str) {
+    int in_single = 0;
+    int in_double = 0;
+    int escaped = 0;
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (escaped) {
+            escaped = 0;
+            continue;
+        }
+        if (str[i] == '\\') {
+            escaped = 1;
+            continue;
+        }
+        if (str[i] == '\'' && !in_double) {
+            in_single = !in_single;
+        } else if (str[i] == '"' && !in_single) {
+            in_double = !in_double;
+        } else if (str[i] == '#' && !in_single && !in_double) {
+            return &str[i];
+        }
+    }
+    return NULL;
+}
+
+
 int parse_key_combo(const char *combo_str, unsigned int *mods_out, KeySym *keysym_out) {
     char buf[128];
     strncpy(buf, combo_str, sizeof(buf) - 1);
@@ -99,6 +124,11 @@ static void config_set_defaults(void) {
     strcpy(config.bar_color_active_bg, "#555555");
     strcpy(config.bar_color_inactive_fg, "#aaaaaa");
     strcpy(config.bar_color_inactive_bg, "-");
+    strcpy(config.bar_color_bg, "-");
+    strcpy(config.bar_color_fg, "-");
+    strcpy(config.bar_color_time_fg, "-");
+    strcpy(config.bar_color_volume_fg, "-");
+    strcpy(config.bar_color_battery_fg, "-");
 
     config.bar_show_windows = 1;
     config.bar_windows_position = 'l';
@@ -147,11 +177,8 @@ static void load_config_file(const char *path) {
         char *val = trim(eq + 1);
 
         // Strip inline comments unless it's a color setting
-        if (strcmp(key, "bar_color_active_fg") != 0 &&
-            strcmp(key, "bar_color_active_bg") != 0 &&
-            strcmp(key, "bar_color_inactive_fg") != 0 &&
-            strcmp(key, "bar_color_inactive_bg") != 0) {
-            char *comment = strchr(val, '#');
+        if (strncmp(key, "bar_color_", 10) != 0) {
+            char *comment = find_comment(val);
             if (comment) {
                 *comment = '\0';
                 val = trim(val);
@@ -229,6 +256,16 @@ static void load_config_file(const char *path) {
             strncpy(config.bar_color_inactive_fg, val, sizeof(config.bar_color_inactive_fg) - 1);
         } else if (strcmp(key, "bar_color_inactive_bg") == 0) {
             strncpy(config.bar_color_inactive_bg, val, sizeof(config.bar_color_inactive_bg) - 1);
+        } else if (strcmp(key, "bar_color_bg") == 0) {
+            strncpy(config.bar_color_bg, val, sizeof(config.bar_color_bg) - 1);
+        } else if (strcmp(key, "bar_color_fg") == 0) {
+            strncpy(config.bar_color_fg, val, sizeof(config.bar_color_fg) - 1);
+        } else if (strcmp(key, "bar_color_time_fg") == 0) {
+            strncpy(config.bar_color_time_fg, val, sizeof(config.bar_color_time_fg) - 1);
+        } else if (strcmp(key, "bar_color_volume_fg") == 0) {
+            strncpy(config.bar_color_volume_fg, val, sizeof(config.bar_color_volume_fg) - 1);
+        } else if (strcmp(key, "bar_color_battery_fg") == 0) {
+            strncpy(config.bar_color_battery_fg, val, sizeof(config.bar_color_battery_fg) - 1);
         }
         // Bar Modules
         else if (strcmp(key, "bar_show_windows") == 0) {

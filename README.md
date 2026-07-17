@@ -104,3 +104,13 @@ These are recommended for the default configuration:
 * Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)).
 * Additional startup configuration and display setttings can be customized in `~/.config/monowm/autostart` (see default: [autostart](autostart)).
 * Bar configuration can be configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](templates/bar.conf)).
+
+## Command Line Interface
+
+You can interact with a running `monowm` instance or query its settings using the following CLI arguments:
+
+* `monowm --reload`: Reloads the configuration file and re-grabs keybinds immediately.
+* `monowm --is-bar-enabled`: Returns `0` if the status bar is enabled, or `1` if it is disabled.
+* `monowm --get-bar-height`: Prints the scaled height of the status bar.
+* `monowm --get-bar-font`: Prints the scaled font configuration used by the status bar.
+

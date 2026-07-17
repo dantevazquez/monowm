@@ -57,6 +57,11 @@ typedef struct {
     char bar_color_active_bg[32];
     char bar_color_inactive_fg[32];
     char bar_color_inactive_bg[32];
+    char bar_color_bg[32];
+    char bar_color_fg[32];
+    char bar_color_time_fg[32];
+    char bar_color_volume_fg[32];
+    char bar_color_battery_fg[32];
 
     // Bar Modules Setup
     int bar_show_windows;

@@ -46,11 +46,29 @@ void spawn_lemonbar(Display *d) {
     char font_str[256];
     snprintf(font_str, sizeof(font_str), "%s:size=%d", config.bar_font_name, config.bar_font_size);
 
+    char *args[16];
+    int arg_idx = 0;
+    args[arg_idx++] = "lemonbar";
+    args[arg_idx++] = "-p";
     if (config.bar_position == 'b') {
-      execlp("lemonbar", "lemonbar", "-p", "-b", "-g", geom_str, "-f", font_str, NULL);
-    } else {
-      execlp("lemonbar", "lemonbar", "-p", "-g", geom_str, "-f", font_str, NULL);
+      args[arg_idx++] = "-b";
     }
+    args[arg_idx++] = "-g";
+    args[arg_idx++] = geom_str;
+    args[arg_idx++] = "-f";
+    args[arg_idx++] = font_str;
+
+    if (strcmp(config.bar_color_bg, "-") != 0 && config.bar_color_bg[0] != '\0') {
+      args[arg_idx++] = "-B";
+      args[arg_idx++] = config.bar_color_bg;
+    }
+    if (strcmp(config.bar_color_fg, "-") != 0 && config.bar_color_fg[0] != '\0') {
+      args[arg_idx++] = "-F";
+      args[arg_idx++] = config.bar_color_fg;
+    }
+    args[arg_idx++] = NULL;
+
+    execvp("lemonbar", args);
     _exit(1);
   } else if (lemonbar_pid > 0) {
     close(pipefd[0]);
@@ -125,6 +143,9 @@ static int render_time(char *buf, int size) {
   char time_str[64];
 
   strftime(time_str, sizeof(time_str), config.bar_time_format, tm_info);
+  if (strcmp(config.bar_color_time_fg, "-") != 0 && config.bar_color_time_fg[0] != '\0') {
+    return snprintf(buf, size, " %%{F%s}%s%%{F-} ", config.bar_color_time_fg, time_str);
+  }
   return snprintf(buf, size, " %s ", time_str);
 }
 
@@ -175,6 +196,9 @@ static int render_volume(char *buf, int size) {
 
   if (muted) {
     return snprintf(buf, size, " %%{F#888888}%s %d%%%%%%{F-} ", icon, percent);
+  }
+  if (strcmp(config.bar_color_volume_fg, "-") != 0 && config.bar_color_volume_fg[0] != '\0') {
+    return snprintf(buf, size, " %%{F%s}%s %d%%%%%%{F-} ", config.bar_color_volume_fg, icon, percent);
   }
   return snprintf(buf, size, " %s %d%% ", icon, percent);
 }
@@ -239,6 +263,9 @@ static int render_battery(char *buf, int size) {
     return snprintf(buf, size, " %%{F#ff5555}%s %d%%%%%%{F-} ", icon, percent);
   } else if (percent <= 25) {
     return snprintf(buf, size, " %%{F#f1fa8c}%s %d%%%%%%{F-} ", icon, percent);
+  }
+  if (strcmp(config.bar_color_battery_fg, "-") != 0 && config.bar_color_battery_fg[0] != '\0') {
+    return snprintf(buf, size, " %%{F%s}%s %d%%%%%%{F-} ", config.bar_color_battery_fg, icon, percent);
   }
   return snprintf(buf, size, " %s %d%% ", icon, percent);
 }
