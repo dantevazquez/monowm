@@ -21,40 +21,52 @@ void keys_grab(Display *dpy, Window root) {
 
   // 1. Grab quit keybind
   if (parse_key_combo(config.bind_quit, &mods, &sym)) {
-    XGrabKey(dpy, XKeysymToKeycode(dpy, sym), mods, root, True, GrabModeAsync,
-             GrabModeAsync);
+    KeyCode code = XKeysymToKeycode(dpy, sym);
+    if (code != 0) {
+      XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+    }
   }
 
   // 2. Grab cycle keybind
   if (config.cycle_enabled && parse_key_combo(config.bind_cycle, &mods, &sym)) {
-    XGrabKey(dpy, XKeysymToKeycode(dpy, sym), mods, root, True, GrabModeAsync,
-             GrabModeAsync);
+    KeyCode code = XKeysymToKeycode(dpy, sym);
+    if (code != 0) {
+      XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+    }
   }
 
   // 3. Grab reload keybind
   if (parse_key_combo(config.bind_reload, &mods, &sym)) {
-    XGrabKey(dpy, XKeysymToKeycode(dpy, sym), mods, root, True, GrabModeAsync,
-             GrabModeAsync);
+    KeyCode code = XKeysymToKeycode(dpy, sym);
+    if (code != 0) {
+      XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+    }
   }
 
   // 3.5. Grab toggle bar keybind
   if (parse_key_combo(config.bind_toggle_bar, &mods, &sym)) {
-    XGrabKey(dpy, XKeysymToKeycode(dpy, sym), mods, root, True, GrabModeAsync,
-             GrabModeAsync);
+    KeyCode code = XKeysymToKeycode(dpy, sym);
+    if (code != 0) {
+      XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+    }
   }
 
   // 4. Grab switch window modifier keys (1-9)
   if (parse_key_combo(config.bind_switch_window_mod, &mods, &sym)) {
     for (int i = 0; i < 9; i++) {
-      XGrabKey(dpy, XKeysymToKeycode(dpy, XK_1 + i), mods, root, True, GrabModeAsync,
-               GrabModeAsync);
+      KeyCode code = XKeysymToKeycode(dpy, XK_1 + i);
+      if (code != 0) {
+        XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+      }
     }
   }
 
   // 5. Grab custom keybinds
   for (int i = 0; i < config.keybind_count; i++) {
-    XGrabKey(dpy, XKeysymToKeycode(dpy, config.keybinds[i].keysym),
-             config.keybinds[i].modifiers, root, True, GrabModeAsync, GrabModeAsync);
+    KeyCode code = XKeysymToKeycode(dpy, config.keybinds[i].keysym);
+    if (code != 0) {
+      XGrabKey(dpy, code, config.keybinds[i].modifiers, root, True, GrabModeAsync, GrabModeAsync);
+    }
   }
 }
 
