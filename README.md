@@ -60,7 +60,7 @@ services.xserver.enable = true;
 
 #### Optional Runtime Dependencies
 These are recommended for the default configuration:
-* [alacritty](https://github.com/alacritty/alacritty) (default terminal)
+* [kitty](https://github.com/kovidgoyal/kitty) (default terminal)
 * [alttab](https://github.com/sagb/alttab) (to switch tabs)
 * [dmenu](https://tools.suckless.org/dmenu/) (to launch applications)
 * [pipewire](https://pipewire.org/) (for volume control)
@@ -85,22 +85,23 @@ These are recommended for the default configuration:
 
 ## Default Binds
 
-| Keybinding | Action / Command | Config Option / Keybind Command |
-| :--- | :--- | :--- |
-| `super+q` | Close active window | `bind_quit` |
-| `super+Tab` | Cycle windows (native switcher, disabled by default) | `bind_cycle` |
-| `super+Shift + [1-9]` | Focus window 1-9 | `bind_switch_window_mod` |
-| `super+Shift+r` | Reload configuration | `bind_reload` |
-| `super+Shift+b` | Toggle status bar visibility | `bind_toggle_bar` |
-| `super+Return` | Launch terminal (`alacritty`) | `keybind = super+Return : alacritty` |
-| `super+space` | Launch app launcher (`dmenu`) | `keybind = super+space : dmenu_run -fn 'monospace-14'` |
-| `super+b` | Launch browser (`chromium`) | `keybind = super+b : chromium` |
-| `XF86AudioRaiseVolume` | Increase volume | `keybind = XF86AudioRaiseVolume : ~/.local/bin/monowm-volume up` |
-| `XF86AudioLowerVolume` | Decrease volume | `keybind = XF86AudioLowerVolume : ~/.local/bin/monowm-volume down` |
-| `XF86AudioMute` | Mute/unmute volume | `keybind = XF86AudioMute : ~/.local/bin/monowm-volume mute` |
-| `XF86AudioMicMute` | Mute/unmute microphone | `keybind = XF86AudioMicMute : wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle` |
-| `XF86MonBrightnessUp` | Increase brightness | `keybind = XF86MonBrightnessUp : ~/.local/bin/monowm-brightness up` |
-| `XF86MonBrightnessDown` | Decrease brightness | `keybind = XF86MonBrightnessDown : ~/.local/bin/monowm-brightness down` |
+| Keybinding              | Action / Command                                      | Config Option / Keybind Command                                              |
+| :---------------------- | :---------------------------------------------------- | :--------------------------------------------------------------------------- |
+| `super+q`               | Close active window                                   | `bind_quit`                                                                  |
+| `super+Tab`             | Cycle windows (native switcher, disabled by default)  | `bind_cycle`                                                                 |
+| `super+[1-9]`           | Focus window 1-9                                      | `bind_switch_window_mod`                                                     |
+| `super+Shift+r`         | Reload configuration                                  | `bind_reload`                                                                |
+| `super+Shift+b`         | Toggle status bar visibility                          | `bind_toggle_bar`                                                           |
+| `super+Return`          | Launch terminal (`kitty`)                             | `keybind = super+Return : kitty`                                             |
+| `super+space`           | Launch app launcher (`dmenu`)                         | `keybind = super+space : dmenu_run -fn 'monospace-14'`                       |
+| `super+b`               | Launch browser (`chromium`)                           | `keybind = super+b : chromium`                                               |
+| `XF86AudioRaiseVolume`  | Increase volume                                       | `keybind = XF86AudioRaiseVolume : ~/.local/bin/monowm-volume up`             |
+| `XF86AudioLowerVolume`  | Decrease volume                                       | `keybind = XF86AudioLowerVolume : ~/.local/bin/monowm-volume down`           |
+| `XF86AudioMute`         | Mute/unmute volume                                    | `keybind = XF86AudioMute : ~/.local/bin/monowm-volume mute`                  |
+| `XF86AudioMicMute`      | Mute/unmute microphone                                | `keybind = XF86AudioMicMute : wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle`   |
+| `XF86MonBrightnessUp`   | Increase brightness                                   | `keybind = XF86MonBrightnessUp : ~/.local/bin/monowm-brightness up`          |
+| `XF86MonBrightnessDown` | Decrease brightness                                   | `keybind = XF86MonBrightnessDown : ~/.local/bin/monowm-brightness down`      |
+
 
 ## Configuration
 * Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)).
