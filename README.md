@@ -119,3 +119,8 @@ You can interact with a running `monowm` instance or query its settings using th
 
 ## Coming soon...
 * Multi monitor support
+
+## Documentation
+
+The [documentation](https://monos.dantevazquez.com/) of monos can give you more information on how to use monowm.
+
