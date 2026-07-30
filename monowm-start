@@ -1,7 +1,22 @@
 #!/bin/bash
 
-if [ -x "$HOME/.config/monowm/autostart" ]; then
-    "$HOME/.config/monowm/autostart"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/monowm"
+
+# Nix packages set this to the directory containing the packaged defaults.
+# Seed only missing files so upgrades never overwrite the user's configuration.
+if [ -n "${MONOWM_DEFAULTS_DIR:-}" ] && [ -d "$MONOWM_DEFAULTS_DIR" ]; then
+    mkdir -p "$CONFIG_DIR"
+    for file in config.conf bar.conf autostart bg.png; do
+        if [ ! -e "$CONFIG_DIR/$file" ] && [ -e "$MONOWM_DEFAULTS_DIR/$file" ]; then
+            cp "$MONOWM_DEFAULTS_DIR/$file" "$CONFIG_DIR/$file"
+            chmod u+w "$CONFIG_DIR/$file"
+        fi
+    done
+    chmod u+x "$CONFIG_DIR/autostart" 2>/dev/null || true
+fi
+
+if [ -x "$CONFIG_DIR/autostart" ]; then
+    "$CONFIG_DIR/autostart"
 fi
 
 MONOWM_EXEC="monowm"

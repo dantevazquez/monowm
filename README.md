@@ -71,6 +71,7 @@ These are recommended for the default configuration:
 * A Nerd Font of your choice (for the bar icons)
 
 ### Installation Steps
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/dantevazquez/monowm.git
@@ -82,6 +83,50 @@ These are recommended for the default configuration:
    # Or on NixOS: nix-shell --run "make install"
    ```
 3. Run `startx` or launch from your favorite display manager.
+
+### Nix flake / NixOS
+
+Build Monowm directly from GitHub:
+
+```bash
+nix build github:dantevazquez/monowm
+```
+
+To use the included NixOS module, add Monowm to the `inputs` of your system
+flake:
+
+```nix
+inputs.monowm = {
+  url = "github:dantevazquez/monowm";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
+```
+
+Then import the module in your `nixosSystem`:
+
+```nix
+modules = [
+  ./configuration.nix
+  inputs.monowm.nixosModules.default
+];
+```
+
+Enable the X server and Monowm in `configuration.nix`:
+
+```nix
+{
+  services.xserver.enable = true;
+  services.xserver.windowManager.monowm.enable = true;
+
+  # Optional: start Monowm automatically instead of choosing it at login.
+  services.displayManager.defaultSession = "none+monowm";
+}
+```
+
+The module installs the applications used by the default configuration. Set
+`services.xserver.windowManager.monowm.recommendedPackages = false` if you want
+to choose those packages yourself. Missing configuration files are initialized
+in `~/.config/monowm` on first login and are never overwritten.
 
 ## Default Binds
 
@@ -95,12 +140,12 @@ These are recommended for the default configuration:
 | `super+Return`          | Launch terminal (`kitty`)                             | `keybind = super+Return : kitty`                                             |
 | `super+space`           | Launch app launcher (`dmenu`)                         | `keybind = super+space : dmenu_run -fn 'monospace-14'`                       |
 | `super+b`               | Launch browser (`chromium`)                           | `keybind = super+b : chromium`                                               |
-| `XF86AudioRaiseVolume`  | Increase volume                                       | `keybind = XF86AudioRaiseVolume : ~/.local/bin/monowm-volume up`             |
-| `XF86AudioLowerVolume`  | Decrease volume                                       | `keybind = XF86AudioLowerVolume : ~/.local/bin/monowm-volume down`           |
-| `XF86AudioMute`         | Mute/unmute volume                                    | `keybind = XF86AudioMute : ~/.local/bin/monowm-volume mute`                  |
+| `XF86AudioRaiseVolume`  | Increase volume                                       | `keybind = XF86AudioRaiseVolume : monowm-volume up`                          |
+| `XF86AudioLowerVolume`  | Decrease volume                                       | `keybind = XF86AudioLowerVolume : monowm-volume down`                        |
+| `XF86AudioMute`         | Mute/unmute volume                                    | `keybind = XF86AudioMute : monowm-volume mute`                               |
 | `XF86AudioMicMute`      | Mute/unmute microphone                                | `keybind = XF86AudioMicMute : wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle`   |
-| `XF86MonBrightnessUp`   | Increase brightness                                   | `keybind = XF86MonBrightnessUp : ~/.local/bin/monowm-brightness up`          |
-| `XF86MonBrightnessDown` | Decrease brightness                                   | `keybind = XF86MonBrightnessDown : ~/.local/bin/monowm-brightness down`      |
+| `XF86MonBrightnessUp`   | Increase brightness                                   | `keybind = XF86MonBrightnessUp : monowm-brightness up`                       |
+| `XF86MonBrightnessDown` | Decrease brightness                                   | `keybind = XF86MonBrightnessDown : monowm-brightness down`                   |
 
 
 ## Configuration
@@ -123,4 +168,3 @@ You can interact with a running `monowm` instance or query its settings using th
 ## Documentation
 
 The [documentation](https://monos.dantevazquez.com/) of monos can give you more information on how to use monowm.
-

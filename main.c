@@ -131,7 +131,7 @@ void spawn(const char *cmd) {
   if (pid == 0) {
     if (fork() == 0) {
       setsid();
-      execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
+      execlp("sh", "sh", "-c", cmd, NULL);
       _exit(0);
     }
     _exit(0);
