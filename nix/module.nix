@@ -55,7 +55,6 @@ in
     ++ lib.optionals cfg.recommendedPackages (
       with pkgs;
       [
-        alttab
         brightnessctl
         dbus
         dmenu

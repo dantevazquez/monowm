@@ -10,18 +10,18 @@ CC ?= gcc
 PKG_CONFIG ?= pkg-config
 
 # Find dependencies using pkg-config
-PACKAGES = x11
+PACKAGES = x11 xcomposite xrender xft
 
 # Compiler/Linker Flags
 CFLAGS += -std=c99 -Wall -Wextra -O2
-CFLAGS += $(shell $(PKG_CONFIG) --cflags $(PACKAGES) 2>/dev/null || echo -I/usr/X11R6/include)
-LDFLAGS += $(shell $(PKG_CONFIG) --libs $(PACKAGES) 2>/dev/null || echo -L/usr/X11R6/lib -lX11 -lXft -lXinerama -lXext) -lpthread
+CFLAGS += $(shell $(PKG_CONFIG) --cflags $(PACKAGES) 2>/dev/null || echo -I/usr/X11R6/include -I/usr/include/freetype2)
+LDFLAGS += $(shell $(PKG_CONFIG) --libs $(PACKAGES) 2>/dev/null || echo -L/usr/X11R6/lib -lX11 -lXcomposite -lXrender -lXft -lXinerama -lXext) -lpthread
 
 # Target and Sources
 TARGET = monowm
-SRCS = main.c appicons.c bar.c keys.c config.c
+SRCS = main.c appicons.c bar.c keys.c config.c window_switcher.c
 OBJS = $(SRCS:.c=.o)
-HEADERS = appicons.h config.h bar.h keys.h
+HEADERS = appicons.h config.h bar.h keys.h window_switcher.h wm.h
 
 LEMONBAR_PACKAGES = xcb xcb-xinerama xcb-randr x11 x11-xcb xft freetype2 fontconfig
 LEMONBAR_CFLAGS = -std=c99 -Wall -Wextra -O2 -DVERSION="\"1.4-xft\"" $(shell $(PKG_CONFIG) --cflags $(LEMONBAR_PACKAGES) 2>/dev/null || echo -I/usr/include/freetype2)
@@ -55,6 +55,7 @@ install: $(TARGET) lemonbar
 	test -f $(HOME)/.config/monowm/autostart || install -m 755 autostart $(HOME)/.config/monowm/autostart
 	test -f $(HOME)/.config/monowm/config.conf || install -m 644 templates/config.conf $(HOME)/.config/monowm/config.conf
 	test -f $(HOME)/.config/monowm/bar.conf || install -m 644 templates/bar.conf $(HOME)/.config/monowm/bar.conf
+	test -f $(HOME)/.config/monowm/switcher.conf || install -m 644 templates/switcher.conf $(HOME)/.config/monowm/switcher.conf
 	test -f $(HOME)/.config/monowm/bg.png || install -m 644 bg.png $(HOME)/.config/monowm/bg.png
 	echo '#!/bin/sh' > $(HOME)/.xinitrc
 	echo 'exec $(BINDIR)/monowm-start' >> $(HOME)/.xinitrc

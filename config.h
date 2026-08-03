@@ -30,11 +30,22 @@ typedef struct {
 
     // Internal Window Manager Keybindings
     char bind_quit[64];
-    char bind_cycle[64];
-    int cycle_enabled;
+    char bind_window_switcher[64];
     char bind_switch_window_mod[64];
     char bind_reload[64];
     char bind_toggle_bar[64];
+
+    // Window Switcher Appearance
+    char switcher_font_name[128];
+    int switcher_font_size;
+    int switcher_tile_scale;
+    char switcher_color_background[32];
+    char switcher_color_card[32];
+    char switcher_color_border[32];
+    char switcher_color_selected[32];
+    char switcher_color_preview_background[32];
+    char switcher_color_text[32];
+    char switcher_color_muted[32];
 
     // Autostart Commands
     char autostarts[MAX_AUTOSTARTS][512];

@@ -4,6 +4,8 @@
   makeWrapper,
   pkg-config,
   libX11,
+  libXcomposite,
+  libXrender,
   libxcb,
   libXft,
   libXinerama,
@@ -36,6 +38,8 @@ stdenv.mkDerivation {
 
   buildInputs = [
     libX11
+    libXcomposite
+    libXrender
     libxcb
     libXft
     libXinerama
@@ -53,7 +57,8 @@ stdenv.mkDerivation {
     install -Dm755 monowm lemonbar monowm-start monowm-volume \
       monowm-brightness -t "$out/bin"
     install -Dm644 monowm.desktop "$out/share/xsessions/monowm.desktop"
-    install -Dm644 templates/config.conf templates/bar.conf autostart bg.png \
+    install -Dm644 templates/config.conf templates/bar.conf \
+      templates/switcher.conf autostart bg.png \
       -t "$out/share/monowm"
 
     patchShebangs "$out/bin" "$out/share/monowm/autostart"

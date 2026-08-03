@@ -15,17 +15,17 @@ Install the required tools and X11 development headers for your distribution:
 
 **Arch-based:**
 ```bash
-sudo pacman -S base-devel libx11 pkgconf
+sudo pacman -S base-devel libx11 libxcomposite libxrender libxft pkgconf
 ```
 
 **Debian/Ubuntu-based:**
 ```bash
-sudo apt update && sudo apt install build-essential libx11-dev pkg-config
+sudo apt update && sudo apt install build-essential libx11-dev libxcomposite-dev libxrender-dev libxft-dev pkg-config
 ```
 
 **Fedora-based:**
 ```bash
-sudo dnf groupinstall "Development Tools" && sudo dnf install libX11-devel pkgconf-pkg-config
+sudo dnf groupinstall "Development Tools" && sudo dnf install libX11-devel libXcomposite-devel libXrender-devel libXft-devel pkgconf-pkg-config
 ```
 
 **NixOS:**
@@ -61,7 +61,6 @@ services.xserver.enable = true;
 #### Optional Runtime Dependencies
 These are recommended for the default configuration:
 * [kitty](https://github.com/kovidgoyal/kitty) (default terminal)
-* [alttab](https://github.com/sagb/alttab) (to switch tabs)
 * [dmenu](https://tools.suckless.org/dmenu/) (to launch applications)
 * [pipewire](https://pipewire.org/) (for volume control)
 * [brightnessctl](https://github.com/Hummer12007/brightnessctl) (to control screen brightness)
@@ -133,7 +132,7 @@ in `~/.config/monowm` on first login and are never overwritten.
 | Keybinding              | Action / Command                                      | Config Option / Keybind Command                                              |
 | :---------------------- | :---------------------------------------------------- | :--------------------------------------------------------------------------- |
 | `super+q`               | Close active window                                   | `bind_quit`                                                                  |
-| `super+Tab`             | Cycle windows (native switcher, disabled by default)  | `bind_cycle`                                                                 |
+| `super+Tab`             | Preview and switch windows in most-recently-used order | `bind_window_switcher`                                                       |
 | `super+[1-9]`           | Focus window 1-9                                      | `bind_switch_window_mod`                                                     |
 | `super+Shift+r`         | Reload configuration                                  | `bind_reload`                                                                |
 | `super+Shift+b`         | Toggle status bar visibility                          | `bind_toggle_bar`                                                           |
@@ -152,6 +151,15 @@ in `~/.config/monowm` on first login and are never overwritten.
 * Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)).
 * Additional startup configuration and display setttings can be customized in `~/.config/monowm/autostart` (see default: [autostart](autostart)).
 * Bar configuration can be configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](templates/bar.conf)).
+* Window switcher font, font size, and colors can be configured in `~/.config/monowm/switcher.conf` (see template: [switcher.conf](templates/switcher.conf)). Changes take effect after `monowm --reload`.
+
+The native window switcher stays open while its binding modifier is held. Press
+`Tab` again (or use the arrow keys) to change the selection, release the
+modifier to focus it, press `Q` to close the selected window, or press `Escape`
+to cancel. `Shift+Tab` moves backwards. The switcher remembers focus history,
+so a quick `super+Tab` toggles back to the window you used last. Change
+`bind_window_switcher` to any supported key combination to rebind it; the old
+`bind_cycle` name remains accepted for existing configurations.
 
 ## Command Line Interface
 

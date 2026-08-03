@@ -2,6 +2,7 @@
 #include "appicons.h"
 #include "bar.h"
 #include "keys.h"
+#include "window_switcher.h"
 #include <X11/X.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -27,6 +28,7 @@ Atom net_wm_window_type, net_wm_window_type_dock;
 Atom net_supported, net_supporting_wm_check, net_client_list, net_active_window, net_wm_name;
 Atom monowm_reload;
 Window wm_check_win;
+static uint64_t focus_sequence = 0;
 
 int x_error_handler(Display *d, XErrorEvent *e) {
   (void)d;
@@ -142,7 +144,9 @@ void spawn(const char *cmd) {
 }
 
 void reload_config() {
+  window_switcher_cancel();
   config_load();
+  window_switcher_reload_config();
   if (config.max_windows > 128) {
     config.max_windows = 128;
   }
@@ -261,10 +265,14 @@ void setup() {
     clients[i].win = None;
     clients[i].active = 0;
     clients[i].ignore_unmap = 0;
+    clients[i].focus_serial = 0;
   }
 
-  XSelectInput(dpy, root, SubstructureRedirectMask | SubstructureNotifyMask | StructureNotifyMask);
+  XSelectInput(dpy, root,
+               SubstructureRedirectMask | SubstructureNotifyMask |
+                   StructureNotifyMask | KeyPressMask | KeyReleaseMask);
 
+  window_switcher_init(dpy, root);
   keys_grab(dpy, root);
 
   XSync(dpy, False);
@@ -284,6 +292,7 @@ int add_client(Window w) {
       clients[i].win = w;
       clients[i].active = 1;
       clients[i].ignore_unmap = 0;
+      clients[i].focus_serial = 0;
       update_client_list();
       return i;
     }
@@ -302,6 +311,7 @@ void focus_client(int idx) {
   int old_client = current_client;
 #endif
   current_client = idx;
+  clients[idx].focus_serial = ++focus_sequence;
 
   XMapWindow(dpy, clients[idx].win);
   XRaiseWindow(dpy, clients[idx].win);
@@ -317,25 +327,81 @@ void focus_client(int idx) {
 
   update_active_window();
   update_bar(clients, config.max_windows, current_client, dpy);
+  if (window_switcher_is_active())
+    window_switcher_screen_changed();
+}
+
+void request_close_client(int idx) {
+  if (idx < 0 || idx >= config.max_windows || !clients[idx].active)
+    return;
+
+  Window win = clients[idx].win;
+  Atom *protocols = NULL;
+  int count = 0;
+  int supports_delete = 0;
+  Atom wm_protocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
+  Atom wm_delete = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+
+  if (XGetWMProtocols(dpy, win, &protocols, &count)) {
+    for (int i = 0; i < count; i++) {
+      if (protocols[i] == wm_delete) {
+        supports_delete = 1;
+        break;
+      }
+    }
+    if (protocols)
+      XFree(protocols);
+  }
+
+  if (supports_delete) {
+    XEvent event;
+    memset(&event, 0, sizeof(event));
+    event.type = ClientMessage;
+    event.xclient.window = win;
+    event.xclient.message_type = wm_protocols;
+    event.xclient.format = 32;
+    event.xclient.data.l[0] = wm_delete;
+    event.xclient.data.l[1] = CurrentTime;
+    XSendEvent(dpy, win, False, NoEventMask, &event);
+  } else {
+    XKillClient(dpy, win);
+  }
+}
+
+static int most_recent_client(void) {
+  int result = -1;
+  uint64_t newest = 0;
+  for (int i = 0; i < config.max_windows; i++) {
+    if (clients[i].active &&
+        (result < 0 || clients[i].focus_serial > newest)) {
+      result = i;
+      newest = clients[i].focus_serial;
+    }
+  }
+  return result;
 }
 
 void remove_client(int idx) {
   if (idx < 0 || idx >= config.max_windows || !clients[idx].active)
     return;
 
+  Window removed_window = clients[idx].win;
+  int removed_current = current_client == idx;
   for (int i = idx; i < config.max_windows - 1; i++) {
     clients[i] = clients[i + 1];
   }
   clients[config.max_windows - 1].win = None;
   clients[config.max_windows - 1].active = 0;
+  clients[config.max_windows - 1].ignore_unmap = 0;
+  clients[config.max_windows - 1].focus_serial = 0;
 
   update_client_list();
 
-  if (current_client == idx) {
-    if (clients[idx].active) {
-      focus_client(idx);
-    } else if (idx > 0 && clients[idx - 1].active) {
-      focus_client(idx - 1);
+  if (removed_current) {
+    current_client = -1;
+    int replacement = most_recent_client();
+    if (replacement >= 0) {
+      focus_client(replacement);
     } else {
       current_client = -1;
       update_active_window();
@@ -348,6 +414,7 @@ void remove_client(int idx) {
   } else {
     update_bar(clients, config.max_windows, current_client, dpy);
   }
+  window_switcher_client_removed(removed_window);
 }
 
 void handle_client_message(XClientMessageEvent *e) {
@@ -381,6 +448,7 @@ void manage_window(Window w) {
   XSetWindowBackgroundPixmap(dpy, w, None);
 #endif
 
+  window_switcher_client_added(w);
   focus_client(idx);
 }
 
@@ -518,6 +586,7 @@ int main(int argc, char *argv[]) {
                               screen_height - lemonbar_height);
           }
         }
+        window_switcher_screen_changed();
       }
       break;
     case MapRequest:
@@ -531,6 +600,12 @@ int main(int argc, char *argv[]) {
       break;
     case KeyPress:
       keys_handle(dpy, &ev.xkey);
+      break;
+    case KeyRelease:
+      keys_handle_release(dpy, &ev.xkey);
+      break;
+    case Expose:
+      window_switcher_handle_expose(&ev.xexpose);
       break;
     case ClientMessage:
       handle_client_message(&ev.xclient);

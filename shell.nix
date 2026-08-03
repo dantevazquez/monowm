@@ -1,4 +1,6 @@
-{ pkgs ? import <nixpkgs> {} }:
+{
+  pkgs ? import <nixpkgs> { },
+}:
 
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
@@ -10,6 +12,8 @@ pkgs.mkShell {
 
   buildInputs = with pkgs; [
     libx11
+    libxcomposite
+    libxrender
     libxcb
     libxft
     libxinerama

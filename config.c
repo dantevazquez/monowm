@@ -104,11 +104,23 @@ static void config_set_defaults(void) {
     // config.conf defaults
     config.max_windows = 9;
     strcpy(config.bind_quit, "super+q");
-    strcpy(config.bind_cycle, "super+Tab");
-    config.cycle_enabled = 0;
+    strcpy(config.bind_window_switcher, "super+Tab");
     strcpy(config.bind_switch_window_mod, "super+Shift");
     strcpy(config.bind_reload, "super+Shift+r");
     strcpy(config.bind_toggle_bar, "super+Shift+b");
+
+    // switcher.conf defaults
+    strcpy(config.switcher_font_name, "JetBrainsMono Nerd Font");
+    config.switcher_font_size = 11;
+    config.switcher_tile_scale = 100;
+    strcpy(config.switcher_color_background, "#15171d");
+    strcpy(config.switcher_color_card, "#252831");
+    strcpy(config.switcher_color_border, "#4b5263");
+    strcpy(config.switcher_color_selected, "#8aadf4");
+    strcpy(config.switcher_color_preview_background, "#090a0d");
+    strcpy(config.switcher_color_text, "#f4f4f5");
+    strcpy(config.switcher_color_muted, "#a6adc8");
+
     config.autostart_count = 0;
     config.keybind_count = 0;
 
@@ -182,7 +194,8 @@ static void load_config_file(const char *path) {
         char *val = trim(eq + 1);
 
         // Strip inline comments unless it's a color setting
-        if (strncmp(key, "bar_color_", 10) != 0) {
+        if (strncmp(key, "bar_color_", 10) != 0 &&
+            strncmp(key, "switcher_color_", 15) != 0) {
             char *comment = find_comment(val);
             if (comment) {
                 *comment = '\0';
@@ -198,16 +211,42 @@ static void load_config_file(const char *path) {
         // Binds
         else if (strcmp(key, "bind_quit") == 0) {
             strncpy(config.bind_quit, val, sizeof(config.bind_quit) - 1);
-        } else if (strcmp(key, "bind_cycle") == 0) {
-            strncpy(config.bind_cycle, val, sizeof(config.bind_cycle) - 1);
-        } else if (strcmp(key, "cycle_enabled") == 0) {
-            config.cycle_enabled = atoi(val);
+        } else if (strcmp(key, "bind_window_switcher") == 0 ||
+                   strcmp(key, "bind_cycle") == 0) {
+            // bind_cycle is kept as a backwards-compatible alias.
+            strncpy(config.bind_window_switcher, val, sizeof(config.bind_window_switcher) - 1);
         } else if (strcmp(key, "bind_switch_window_mod") == 0) {
             strncpy(config.bind_switch_window_mod, val, sizeof(config.bind_switch_window_mod) - 1);
         } else if (strcmp(key, "bind_reload") == 0) {
             strncpy(config.bind_reload, val, sizeof(config.bind_reload) - 1);
         } else if (strcmp(key, "bind_toggle_bar") == 0) {
             strncpy(config.bind_toggle_bar, val, sizeof(config.bind_toggle_bar) - 1);
+        }
+        // Window Switcher Appearance
+        else if (strcmp(key, "switcher_font_name") == 0) {
+            strncpy(config.switcher_font_name, val, sizeof(config.switcher_font_name) - 1);
+        } else if (strcmp(key, "switcher_font_size") == 0) {
+            config.switcher_font_size = atoi(val);
+            if (config.switcher_font_size < 4) config.switcher_font_size = 4;
+            if (config.switcher_font_size > 96) config.switcher_font_size = 96;
+        } else if (strcmp(key, "switcher_tile_scale") == 0) {
+            config.switcher_tile_scale = atoi(val);
+            if (config.switcher_tile_scale < 25) config.switcher_tile_scale = 25;
+            if (config.switcher_tile_scale > 200) config.switcher_tile_scale = 200;
+        } else if (strcmp(key, "switcher_color_background") == 0) {
+            strncpy(config.switcher_color_background, val, sizeof(config.switcher_color_background) - 1);
+        } else if (strcmp(key, "switcher_color_card") == 0) {
+            strncpy(config.switcher_color_card, val, sizeof(config.switcher_color_card) - 1);
+        } else if (strcmp(key, "switcher_color_border") == 0) {
+            strncpy(config.switcher_color_border, val, sizeof(config.switcher_color_border) - 1);
+        } else if (strcmp(key, "switcher_color_selected") == 0) {
+            strncpy(config.switcher_color_selected, val, sizeof(config.switcher_color_selected) - 1);
+        } else if (strcmp(key, "switcher_color_preview_background") == 0) {
+            strncpy(config.switcher_color_preview_background, val, sizeof(config.switcher_color_preview_background) - 1);
+        } else if (strcmp(key, "switcher_color_text") == 0) {
+            strncpy(config.switcher_color_text, val, sizeof(config.switcher_color_text) - 1);
+        } else if (strcmp(key, "switcher_color_muted") == 0) {
+            strncpy(config.switcher_color_muted, val, sizeof(config.switcher_color_muted) - 1);
         }
         // Run commands
         else if (strcmp(key, "run") == 0) {
@@ -349,17 +388,21 @@ void config_load(void) {
 
     char config_path[1024];
     char bar_path[1024];
+    char switcher_path[1024];
     const char *xdg_config = getenv("XDG_CONFIG_HOME");
     if (xdg_config) {
         snprintf(config_path, sizeof(config_path), "%s/monowm/config.conf", xdg_config);
         snprintf(bar_path, sizeof(bar_path), "%s/monowm/bar.conf", xdg_config);
+        snprintf(switcher_path, sizeof(switcher_path), "%s/monowm/switcher.conf", xdg_config);
     } else {
         const char *home = getenv("HOME");
         snprintf(config_path, sizeof(config_path), "%s/.config/monowm/config.conf", home ? home : "");
         snprintf(bar_path, sizeof(bar_path), "%s/.config/monowm/bar.conf", home ? home : "");
+        snprintf(switcher_path, sizeof(switcher_path), "%s/.config/monowm/switcher.conf", home ? home : "");
     }
 
     load_config_file(config_path);
+    load_config_file(switcher_path);
     load_config_file(bar_path);
 
     // Fallback: If no icons were parsed at all, load defaults

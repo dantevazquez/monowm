@@ -1,14 +1,8 @@
 #ifndef BAR_H
 #define BAR_H
 
+#include "wm.h"
 #include <X11/Xlib.h>
-
-// Forward declaration of Client (defined in main.c / wm.h)
-typedef struct {
-  Window win;
-  int active;
-  int ignore_unmap;
-} Client;
 
 // Get the icon string for a client window
 const char *get_client_icon(Display *dpy, Window w);

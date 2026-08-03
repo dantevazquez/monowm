@@ -1,6 +1,7 @@
 #include "keys.h"
 #include "config.h"
 #include "bar.h"
+#include "window_switcher.h"
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
 #include <string.h>
@@ -13,7 +14,18 @@ void focus_client(int idx);
 void reload_config(void);
 void spawn(const char *cmd);
 void toggle_bar(void);
+void request_close_client(int idx);
 
+static void grab_key(Display *dpy, Window root, KeyCode code,
+                     unsigned int modifiers, Bool owner_events) {
+  const unsigned int ignored_modifiers[] = {
+      0, LockMask, Mod2Mask, LockMask | Mod2Mask};
+  for (size_t i = 0;
+       i < sizeof(ignored_modifiers) / sizeof(ignored_modifiers[0]); i++) {
+    XGrabKey(dpy, code, modifiers | ignored_modifiers[i], root, owner_events,
+             GrabModeAsync, GrabModeAsync);
+  }
+}
 
 void keys_grab(Display *dpy, Window root) {
   unsigned int mods;
@@ -23,15 +35,18 @@ void keys_grab(Display *dpy, Window root) {
   if (parse_key_combo(config.bind_quit, &mods, &sym)) {
     KeyCode code = XKeysymToKeycode(dpy, sym);
     if (code != 0) {
-      XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+      grab_key(dpy, root, code, mods, True);
     }
   }
 
-  // 2. Grab cycle keybind
-  if (config.cycle_enabled && parse_key_combo(config.bind_cycle, &mods, &sym)) {
+  // 2. Grab the modal window switcher. owner_events=False keeps Q and key
+  // releases routed to the WM until the initiating modifier is released.
+  if (parse_key_combo(config.bind_window_switcher, &mods, &sym)) {
     KeyCode code = XKeysymToKeycode(dpy, sym);
     if (code != 0) {
-      XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+      grab_key(dpy, root, code, mods, False);
+      if (!(mods & ShiftMask))
+        grab_key(dpy, root, code, mods | ShiftMask, False);
     }
   }
 
@@ -39,7 +54,7 @@ void keys_grab(Display *dpy, Window root) {
   if (parse_key_combo(config.bind_reload, &mods, &sym)) {
     KeyCode code = XKeysymToKeycode(dpy, sym);
     if (code != 0) {
-      XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+      grab_key(dpy, root, code, mods, True);
     }
   }
 
@@ -47,7 +62,7 @@ void keys_grab(Display *dpy, Window root) {
   if (parse_key_combo(config.bind_toggle_bar, &mods, &sym)) {
     KeyCode code = XKeysymToKeycode(dpy, sym);
     if (code != 0) {
-      XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+      grab_key(dpy, root, code, mods, True);
     }
   }
 
@@ -56,7 +71,7 @@ void keys_grab(Display *dpy, Window root) {
     for (int i = 0; i < 9; i++) {
       KeyCode code = XKeysymToKeycode(dpy, XK_1 + i);
       if (code != 0) {
-        XGrabKey(dpy, code, mods, root, True, GrabModeAsync, GrabModeAsync);
+        grab_key(dpy, root, code, mods, True);
       }
     }
   }
@@ -65,12 +80,18 @@ void keys_grab(Display *dpy, Window root) {
   for (int i = 0; i < config.keybind_count; i++) {
     KeyCode code = XKeysymToKeycode(dpy, config.keybinds[i].keysym);
     if (code != 0) {
-      XGrabKey(dpy, code, config.keybinds[i].modifiers, root, True, GrabModeAsync, GrabModeAsync);
+      grab_key(dpy, root, code, config.keybinds[i].modifiers, True);
     }
   }
 }
 
 void keys_handle(Display *dpy, XKeyEvent *e) {
+  (void)dpy;
+  if (window_switcher_is_active()) {
+    window_switcher_handle_key_press(e);
+    return;
+  }
+
   KeySym key = XLookupKeysym(e, 0);
   unsigned int state = e->state;
   state &= ~(LockMask | Mod2Mask);
@@ -81,56 +102,16 @@ void keys_handle(Display *dpy, XKeyEvent *e) {
   // 1. Quit Keybind
   if (parse_key_combo(config.bind_quit, &mods, &sym)) {
     if (key == sym && state == mods) {
-      if (current_client >= 0 && clients[current_client].active) {
-        Window win = clients[current_client].win;
-        Atom *protocols = NULL;
-        int n = 0;
-        int supports_delete = 0;
-        Atom proto_delete = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
-
-        if (XGetWMProtocols(dpy, win, &protocols, &n)) {
-          for (int i = 0; i < n; i++) {
-            if (protocols[i] == proto_delete) {
-              supports_delete = 1;
-              break;
-            }
-          }
-          if (protocols) {
-            XFree(protocols);
-          }
-        }
-
-        if (supports_delete) {
-          XEvent ev;
-          memset(&ev, 0, sizeof(ev));
-          ev.type = ClientMessage;
-          ev.xclient.window = win;
-          ev.xclient.message_type = XInternAtom(dpy, "WM_PROTOCOLS", False);
-          ev.xclient.format = 32;
-          ev.xclient.data.l[0] = proto_delete;
-          ev.xclient.data.l[1] = CurrentTime;
-          XSendEvent(dpy, win, False, NoEventMask, &ev);
-        } else {
-          XKillClient(dpy, win);
-        }
-      }
+      request_close_client(current_client);
       return;
     }
   }
 
-  // 2. Cycle Keybind
-  if (config.cycle_enabled && parse_key_combo(config.bind_cycle, &mods, &sym)) {
-    if (key == sym && state == mods) {
-      if (current_client < 0)
-        return;
-
-      int next_idx = current_client + 1;
-      if (next_idx >= config.max_windows || !clients[next_idx].active) {
-        next_idx = 0;
-      }
-      if (next_idx != current_client && clients[next_idx].active) {
-        focus_client(next_idx);
-      }
+  // 2. Native MRU window switcher
+  if (parse_key_combo(config.bind_window_switcher, &mods, &sym)) {
+    int backwards = !(mods & ShiftMask) && state == (mods | ShiftMask);
+    if (key == sym && (state == mods || backwards)) {
+      window_switcher_start(mods, sym, backwards ? -1 : 1);
       return;
     }
   }
@@ -167,4 +148,10 @@ void keys_handle(Display *dpy, XKeyEvent *e) {
       return;
     }
   }
+}
+
+void keys_handle_release(Display *dpy, XKeyEvent *e) {
+  (void)dpy;
+  if (window_switcher_is_active())
+    window_switcher_handle_key_release(e);
 }
