@@ -287,6 +287,14 @@ void setup() {
 }
 
 int add_client(Window w) {
+  // Toolkits may queue more than one MapRequest before the window manager maps
+  // the window. Treat client registration as idempotent so those requests do
+  // not create multiple entries for the same X window.
+  for (int i = 0; i < config.max_windows; i++) {
+    if (clients[i].active && clients[i].win == w)
+      return i;
+  }
+
   for (int i = 0; i < config.max_windows; i++) {
     if (!clients[i].active) {
       clients[i].win = w;
