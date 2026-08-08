@@ -11,4 +11,6 @@ typedef struct {
   uint64_t focus_serial;
 } Client;
 
+double get_dpi(Display *d);
+
 #endif

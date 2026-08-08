@@ -79,12 +79,21 @@ static XftFont *open_switcher_font(void) {
   int screen = DefaultScreen(switcher.dpy);
   const char *families[] = {config.switcher_font_name, "monospace", "sans"};
   char pattern[256];
+  double dpi = get_dpi(switcher.dpy);
+  double pixel_size = config.switcher_font_size * dpi / 72.0;
 
   for (size_t i = 0; i < sizeof(families) / sizeof(families[0]); i++) {
     if (!families[i] || families[i][0] == '\0')
       continue;
-    snprintf(pattern, sizeof(pattern), "%s:size=%d", families[i],
-             config.switcher_font_size);
+    /*
+     * Xft caches defaults such as Xft.dpi on a Display connection.  monowm's
+     * connection lives for the whole session, so reopening a point-sized font
+     * after `xrdb -merge` would otherwise keep using the old DPI.  get_dpi()
+     * reads through a fresh connection; specifying the equivalent pixel size
+     * makes the newly loaded font independent of Xft's stale default cache.
+     */
+    snprintf(pattern, sizeof(pattern), "%s:pixelsize=%.2f", families[i],
+             pixel_size);
     XftFont *font = XftFontOpenName(switcher.dpy, screen, pattern);
     if (font)
       return font;
