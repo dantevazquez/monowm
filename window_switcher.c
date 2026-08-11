@@ -85,13 +85,6 @@ static XftFont *open_switcher_font(void) {
   for (size_t i = 0; i < sizeof(families) / sizeof(families[0]); i++) {
     if (!families[i] || families[i][0] == '\0')
       continue;
-    /*
-     * Xft caches defaults such as Xft.dpi on a Display connection.  monowm's
-     * connection lives for the whole session, so reopening a point-sized font
-     * after `xrdb -merge` would otherwise keep using the old DPI.  get_dpi()
-     * reads through a fresh connection; specifying the equivalent pixel size
-     * makes the newly loaded font independent of Xft's stale default cache.
-     */
     snprintf(pattern, sizeof(pattern), "%s:pixelsize=%.2f", families[i],
              pixel_size);
     XftFont *font = XftFontOpenName(switcher.dpy, screen, pattern);

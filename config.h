@@ -4,7 +4,6 @@
 #include <X11/X.h>
 #include <X11/keysym.h>
 
-// Advanced Compile-time Settings (not configurable at runtime)
 #define CLIENT_BG_PREVENT_FLASH 2
 #define KEEP_INACTIVE_MAPPED 1
 

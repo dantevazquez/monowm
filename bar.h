@@ -3,6 +3,40 @@
 
 #include "wm.h"
 #include <X11/Xlib.h>
+#include <sys/types.h>
+
+#ifdef NO_BAR
+
+static inline const char *get_client_icon(Display *dpy, Window w) {
+  (void)dpy;
+  (void)w;
+  return "";
+}
+
+static inline void update_bar(Client *clients, int max_windows,
+                              int current_client, Display *dpy) {
+  (void)clients;
+  (void)max_windows;
+  (void)current_client;
+  (void)dpy;
+}
+
+static inline void bar_start_refresh_thread(Client *clients, int max_windows,
+                                            int *current_client_ptr,
+                                            Display *dpy) {
+  (void)clients;
+  (void)max_windows;
+  (void)current_client_ptr;
+  (void)dpy;
+}
+
+static inline void bar_trigger_update(void) {}
+
+static inline void spawn_lemonbar(Display *d) { (void)d; }
+
+static inline void kill_lemonbar(void) {}
+
+#else
 
 // Get the icon string for a client window
 const char *get_client_icon(Display *dpy, Window w);
@@ -25,5 +59,6 @@ extern int runtime_bar_enabled;
 extern int lemonbar_pipe_fd;
 extern pid_t lemonbar_pid;
 
+#endif
 
 #endif

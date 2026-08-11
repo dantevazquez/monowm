@@ -16,6 +16,23 @@ void spawn(const char *cmd);
 void toggle_bar(void);
 void request_close_client(int idx);
 
+#ifdef NO_SWITCHER
+static void cycle_client(int direction) {
+  int index = current_client;
+  if (index < 0 || index >= config.max_windows)
+    index = direction < 0 ? 0 : -1;
+
+  for (int checked = 0; checked < config.max_windows; checked++) {
+    index = (index + (direction < 0 ? -1 : 1) + config.max_windows) %
+            config.max_windows;
+    if (clients[index].active) {
+      focus_client(index);
+      return;
+    }
+  }
+}
+#endif
+
 static void grab_key(Display *dpy, Window root, KeyCode code,
                      unsigned int modifiers, Bool owner_events) {
   const unsigned int ignored_modifiers[] = {
@@ -39,14 +56,20 @@ void keys_grab(Display *dpy, Window root) {
     }
   }
 
-  // 2. Grab the modal window switcher. owner_events=False keeps Q and key
-  // releases routed to the WM until the initiating modifier is released.
+  // 2. Grab the window switch binding. The graphical switcher needs a modal
+  // grab; the minimal switcher-free cycler handles each press immediately.
   if (parse_key_combo(config.bind_window_switcher, &mods, &sym)) {
     KeyCode code = XKeysymToKeycode(dpy, sym);
     if (code != 0) {
+#ifdef NO_SWITCHER
+      grab_key(dpy, root, code, mods, True);
+      if (!(mods & ShiftMask))
+        grab_key(dpy, root, code, mods | ShiftMask, True);
+#else
       grab_key(dpy, root, code, mods, False);
       if (!(mods & ShiftMask))
         grab_key(dpy, root, code, mods | ShiftMask, False);
+#endif
     }
   }
 
@@ -59,12 +82,14 @@ void keys_grab(Display *dpy, Window root) {
   }
 
   // 3.5. Grab toggle bar keybind
+#ifndef NO_BAR
   if (parse_key_combo(config.bind_toggle_bar, &mods, &sym)) {
     KeyCode code = XKeysymToKeycode(dpy, sym);
     if (code != 0) {
       grab_key(dpy, root, code, mods, True);
     }
   }
+#endif
 
   // 4. Grab switch window modifier keys (1-9)
   if (parse_key_combo(config.bind_switch_window_mod, &mods, &sym)) {
@@ -111,7 +136,11 @@ void keys_handle(Display *dpy, XKeyEvent *e) {
   if (parse_key_combo(config.bind_window_switcher, &mods, &sym)) {
     int backwards = !(mods & ShiftMask) && state == (mods | ShiftMask);
     if (key == sym && (state == mods || backwards)) {
+#ifdef NO_SWITCHER
+      cycle_client(backwards ? -1 : 1);
+#else
       window_switcher_start(mods, sym, backwards ? -1 : 1);
+#endif
       return;
     }
   }
@@ -125,12 +154,14 @@ void keys_handle(Display *dpy, XKeyEvent *e) {
   }
 
   // 3.5. Toggle Bar Keybind
+#ifndef NO_BAR
   if (parse_key_combo(config.bind_toggle_bar, &mods, &sym)) {
     if (key == sym && state == mods) {
       toggle_bar();
       return;
     }
   }
+#endif
 
   // 4. Switch Modifier Keybinds (1-9)
   if (parse_key_combo(config.bind_switch_window_mod, &mods, &sym)) {

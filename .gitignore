@@ -1,5 +1,7 @@
 monowm
 *.o
+.build/
+config.mk
 result
 result-*
 lemonbar

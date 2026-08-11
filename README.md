@@ -83,6 +83,19 @@ These are recommended for the default configuration:
    ```
 3. Run `startx` or launch from your favorite display manager.
 
+#### Optional builds
+
+If you're running this on a 1967 thinkpad, you can compile without the bar, tab switcher or both.
+```bash
+./configure --nobar --noswitcher
+make
+make install
+```
+or
+```bash
+make NOBAR=1 NOSWITCHER=1 install
+```
+
 ### Nix flake / NixOS
 
 Build Monowm directly from GitHub:
@@ -127,48 +140,13 @@ The module installs the applications used by the default configuration. Set
 to choose those packages yourself. Missing configuration files are initialized
 in `~/.config/monowm` on first login and are never overwritten.
 
-## Default Binds
-
-| Keybinding              | Action / Command                                      | Config Option / Keybind Command                                              |
-| :---------------------- | :---------------------------------------------------- | :--------------------------------------------------------------------------- |
-| `super+q`               | Close active window                                   | `bind_quit`                                                                  |
-| `super+Tab`             | Preview and switch windows in most-recently-used order | `bind_window_switcher`                                                       |
-| `super+[1-9]`           | Focus window 1-9                                      | `bind_switch_window_mod`                                                     |
-| `super+Shift+r`         | Reload configuration                                  | `bind_reload`                                                                |
-| `super+Shift+b`         | Toggle status bar visibility                          | `bind_toggle_bar`                                                           |
-| `super+Return`          | Launch terminal (`kitty`)                             | `keybind = super+Return : kitty`                                             |
-| `super+space`           | Launch app launcher (`dmenu`)                         | `keybind = super+space : dmenu_run -fn 'monospace-14'`                       |
-| `super+b`               | Launch browser (`chromium`)                           | `keybind = super+b : chromium`                                               |
-| `XF86AudioRaiseVolume`  | Increase volume                                       | `keybind = XF86AudioRaiseVolume : monowm-volume up`                          |
-| `XF86AudioLowerVolume`  | Decrease volume                                       | `keybind = XF86AudioLowerVolume : monowm-volume down`                        |
-| `XF86AudioMute`         | Mute/unmute volume                                    | `keybind = XF86AudioMute : monowm-volume mute`                               |
-| `XF86AudioMicMute`      | Mute/unmute microphone                                | `keybind = XF86AudioMicMute : wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle`   |
-| `XF86MonBrightnessUp`   | Increase brightness                                   | `keybind = XF86MonBrightnessUp : monowm-brightness up`                       |
-| `XF86MonBrightnessDown` | Decrease brightness                                   | `keybind = XF86MonBrightnessDown : monowm-brightness down`                   |
-
-
 ## Configuration
-* Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)).
+* Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)). You can also find the default binds here.
 * Additional startup configuration and display setttings can be customized in `~/.config/monowm/autostart` (see default: [autostart](autostart)).
 * Bar configuration can be configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](templates/bar.conf)).
-* Window switcher font, font size, and colors can be configured in `~/.config/monowm/switcher.conf` (see template: [switcher.conf](templates/switcher.conf)). Changes take effect after `monowm --reload`.
+* Window switcher font, font size, and colors can be configured in `~/.config/monowm/switcher.conf` (see template: [switcher.conf](templates/switcher.conf)).
 
-The native window switcher stays open while its binding modifier is held. Press
-`Tab` again (or use the arrow keys) to change the selection, release the
-modifier to focus it, press `Q` to close the selected window, or press `Escape`
-to cancel. `Shift+Tab` moves backwards. The switcher remembers focus history,
-so a quick `super+Tab` toggles back to the window you used last. Change
-`bind_window_switcher` to any supported key combination to rebind it; the old
-`bind_cycle` name remains accepted for existing configurations.
-
-## Command Line Interface
-
-You can interact with a running `monowm` instance or query its settings using the following CLI arguments:
-
-* `monowm --reload`: Reloads the configuration file and re-grabs keybinds immediately.
-* `monowm --is-bar-enabled`: Returns `0` if the status bar is enabled, or `1` if it is disabled.
-* `monowm --get-bar-height`: Prints the scaled height of the status bar.
-* `monowm --get-bar-font`: Prints the scaled font configuration used by the status bar.
+Changes take effect after `monowm --reload` or with ctrl f4.
 
 ## Coming soon...
 * Multi monitor support

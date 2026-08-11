@@ -151,8 +151,11 @@ void reload_config() {
     config.max_windows = 128;
   }
 
+#ifdef NO_BAR
+  runtime_bar_enabled = 0;
+  lemonbar_height = 0;
+#else
   kill_lemonbar();
-
   if (config.bar_enabled && is_command_in_path("lemonbar")) {
     runtime_bar_enabled = 1;
     lemonbar_height = get_scaled_bar_height(dpy);
@@ -161,6 +164,7 @@ void reload_config() {
     runtime_bar_enabled = 0;
     lemonbar_height = 0;
   }
+#endif
 
   XUngrabKey(dpy, AnyKey, AnyModifier, root);
   keys_grab(dpy, root);
@@ -177,6 +181,9 @@ void reload_config() {
 }
 
 void toggle_bar() {
+#ifdef NO_BAR
+  return;
+#else
   config.bar_enabled = !config.bar_enabled;
   if (config.bar_enabled && is_command_in_path("lemonbar")) {
     runtime_bar_enabled = 1;
@@ -196,6 +203,7 @@ void toggle_bar() {
     }
   }
   bar_trigger_update();
+#endif
 }
 
 void setup() {
@@ -222,6 +230,10 @@ void setup() {
     exit(1);
   }
 
+#ifdef NO_BAR
+  runtime_bar_enabled = 0;
+  lemonbar_height = 0;
+#else
   if (config.bar_enabled && is_command_in_path("lemonbar")) {
     runtime_bar_enabled = 1;
     lemonbar_height = get_scaled_bar_height(dpy);
@@ -230,6 +242,7 @@ void setup() {
     runtime_bar_enabled = 0;
     lemonbar_height = 0;
   }
+#endif
 
   net_wm_window_type = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
   net_wm_window_type_dock = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
@@ -287,9 +300,6 @@ void setup() {
 }
 
 int add_client(Window w) {
-  // Toolkits may queue more than one MapRequest before the window manager maps
-  // the window. Treat client registration as idempotent so those requests do
-  // not create multiple entries for the same X window.
   for (int i = 0; i < config.max_windows; i++) {
     if (clients[i].active && clients[i].win == w)
       return i;
@@ -552,10 +562,18 @@ int main(int argc, char *argv[]) {
   }
 
   if (argc > 1 && strcmp(argv[1], "--is-bar-enabled") == 0) {
+#ifdef NO_BAR
+    return 1;
+#else
     return config.bar_enabled ? 0 : 1;
+#endif
   }
 
   if (argc > 1 && strcmp(argv[1], "--get-bar-height") == 0) {
+#ifdef NO_BAR
+    printf("0\n");
+    return 0;
+#else
     Display *d = XOpenDisplay(NULL);
     if (!d) {
       printf("%d\n", config.bar_font_size * 2);
@@ -564,6 +582,7 @@ int main(int argc, char *argv[]) {
     printf("%d\n", get_scaled_bar_height(d));
     XCloseDisplay(d);
     return 0;
+#endif
   }
 
   if (argc > 1 && strcmp(argv[1], "--get-bar-font") == 0) {
