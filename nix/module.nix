@@ -7,6 +7,9 @@
 
 let
   cfg = config.services.xserver.windowManager.monowm;
+  configuredDefaultPackage = monowmPackage.override {
+    inherit (cfg) withBar withSwitcher;
+  };
 in
 {
   options.services.xserver.windowManager.monowm = {
@@ -14,9 +17,25 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = monowmPackage;
-      defaultText = lib.literalExpression "monowm.packages.\${pkgs.system}.default";
-      description = "The Monowm package to use.";
+      default = configuredDefaultPackage;
+      defaultText = lib.literalExpression ''
+        monowm.packages.''${pkgs.system}.default.override {
+          inherit (config.services.xserver.windowManager.monowm) withBar withSwitcher;
+        }
+      '';
+      description = "The Monowm package to use. A custom package bypasses the withBar and withSwitcher options.";
+    };
+
+    withBar = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to compile and install Monowm's built-in bar and lemonbar.";
+    };
+
+    withSwitcher = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to compile the graphical window switcher.";
     };
 
     extraSessionCommands = lib.mkOption {

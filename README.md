@@ -1,6 +1,6 @@
 # Monowm 🙉
 
-Lightweight window manger for x that uses under 3mb of ram. This window manager follows the mobile workflow where one app/window always occupies the entire screen.
+Lightweight window manger for x that can run with under 3mb of ram. This window manager follows the mobile workflow where one app/window always occupies the entire screen.
 
 If you want a complete out of the box arch system with monowm visit [monos](https://github.com/dantevazquez/monos).
 
@@ -130,15 +130,17 @@ Enable the X server and Monowm in `configuration.nix`:
   services.xserver.enable = true;
   services.xserver.windowManager.monowm.enable = true;
 
+  # Optional compile-time features (both default to true).
+  services.xserver.windowManager.monowm.withBar = false;
+  services.xserver.windowManager.monowm.withSwitcher = false;
+
   # Optional: start Monowm automatically instead of choosing it at login.
   services.displayManager.defaultSession = "none+monowm";
+
+  #Optional: Don't insall with recommend packages like kitty, dmenu, etc.
+  services.xserver.windowManager.monowm.recommendedPackages = false
 }
 ```
-
-The module installs the applications used by the default configuration. Set
-`services.xserver.windowManager.monowm.recommendedPackages = false` if you want
-to choose those packages yourself. Missing configuration files are initialized
-in `~/.config/monowm` on first login and are never overwritten.
 
 ## Configuration
 * Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)). You can also find the default binds here.
