@@ -65,8 +65,8 @@ These are recommended for the default configuration:
 * [pipewire](https://pipewire.org/) (for volume control)
 * [brightnessctl](https://github.com/Hummer12007/brightnessctl) (to control screen brightness)
 * [dunst](https://github.com/dunst-project/dunst) (to see volume changes and low battery notifications)
-* [lemonbarxft](https://github.com/drscream/lemonbar-xft) (Built-in bar)
-* [feh](https://github.com/derf/feh) (For Background)
+* [xwallpaper](https://github.com/stoeckmann/xwallpaper) (For Background)
+* xcompmgr or any x compositor
 * A Nerd Font of your choice (for the bar icons)
 
 ### Installation Steps
@@ -137,7 +137,7 @@ Enable the X server and Monowm in `configuration.nix`:
   # Optional: start Monowm automatically instead of choosing it at login.
   services.displayManager.defaultSession = "none+monowm";
 
-  #Optional: Don't insall with recommend packages like kitty, dmenu, etc.
+  #Optional: Don't insall with recommend packages like kitty, dmenu, xcompmgr, etc.
   services.xserver.windowManager.monowm.recommendedPackages = false
 }
 ```
