@@ -78,7 +78,8 @@ in
         dbus
         dmenu
         dunst
-        feh
+        xwallpaper
+        xcompmgr
         kitty
         libnotify
         nerd-fonts.jetbrains-mono
