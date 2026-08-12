@@ -60,7 +60,7 @@ services.xserver.enable = true;
 
 #### Optional Runtime Dependencies
 These are recommended for the default configuration:
-* [kitty](https://github.com/kovidgoyal/kitty) (default terminal)
+* [alacritty](https://github.com/alacritty/alacritty) (default terminal)
 * [dmenu](https://tools.suckless.org/dmenu/) (to launch applications)
 * [pipewire](https://pipewire.org/) (for volume control)
 * [brightnessctl](https://github.com/Hummer12007/brightnessctl) (to control screen brightness)
@@ -137,7 +137,7 @@ Enable the X server and Monowm in `configuration.nix`:
   # Optional: start Monowm automatically instead of choosing it at login.
   services.displayManager.defaultSession = "none+monowm";
 
-  #Optional: Don't insall with recommend packages like kitty, dmenu, xcompmgr, etc.
+  #Optional: Don't insall with recommend packages like alacritty, dmenu, xcompmgr, etc.
   services.xserver.windowManager.monowm.recommendedPackages = false
 }
 ```

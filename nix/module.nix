@@ -80,7 +80,7 @@ in
         dunst
         xwallpaper
         xcompmgr
-        kitty
+        alacritty
         libnotify
         nerd-fonts.jetbrains-mono
         pipewire
