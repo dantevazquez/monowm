@@ -143,7 +143,7 @@ Enable the X server and Monowm in `configuration.nix`:
 ```
 
 ## Configuration
-* Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)). You can also find the default binds here.
+* Core configurations (bindings, custom hotkeys, auto-run commands) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)). You can also find the default binds here. Internal bindings only exist when their setting is present in the config; removing one disables it.
 * Additional startup configuration and display setttings can be customized in `~/.config/monowm/autostart` (see default: [autostart](autostart)).
 * Bar configuration can be configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](templates/bar.conf)).
 * Window switcher font, font size, and colors can be configured in `~/.config/monowm/switcher.conf` (see template: [switcher.conf](templates/switcher.conf)).

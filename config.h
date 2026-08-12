@@ -30,6 +30,8 @@ typedef struct {
     // Internal Window Manager Keybindings
     char bind_quit[64];
     char bind_window_switcher[64];
+    char bind_cycle_forward[64];
+    char bind_cycle_back[64];
     char bind_switch_window_mod[64];
     char bind_reload[64];
     char bind_toggle_bar[64];

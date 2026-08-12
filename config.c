@@ -103,11 +103,13 @@ int parse_key_combo(const char *combo_str, unsigned int *mods_out, KeySym *keysy
 static void config_set_defaults(void) {
     // config.conf defaults
     config.max_windows = 9;
-    strcpy(config.bind_quit, "super+q");
-    strcpy(config.bind_window_switcher, "super+Tab");
-    strcpy(config.bind_switch_window_mod, "super+Shift");
-    strcpy(config.bind_reload, "super+Shift+r");
-    strcpy(config.bind_toggle_bar, "super+Shift+b");
+    config.bind_quit[0] = '\0';
+    config.bind_window_switcher[0] = '\0';
+    config.bind_cycle_forward[0] = '\0';
+    config.bind_cycle_back[0] = '\0';
+    config.bind_switch_window_mod[0] = '\0';
+    config.bind_reload[0] = '\0';
+    config.bind_toggle_bar[0] = '\0';
 
     // switcher.conf defaults
     strcpy(config.switcher_font_name, "JetBrainsMono Nerd Font");
@@ -211,10 +213,12 @@ static void load_config_file(const char *path) {
         // Binds
         else if (strcmp(key, "bind_quit") == 0) {
             strncpy(config.bind_quit, val, sizeof(config.bind_quit) - 1);
-        } else if (strcmp(key, "bind_window_switcher") == 0 ||
-                   strcmp(key, "bind_cycle") == 0) {
-            // bind_cycle is kept as a backwards-compatible alias.
+        } else if (strcmp(key, "bind_window_switcher") == 0) {
             strncpy(config.bind_window_switcher, val, sizeof(config.bind_window_switcher) - 1);
+        } else if (strcmp(key, "bind_cycle_forward") == 0) {
+            strncpy(config.bind_cycle_forward, val, sizeof(config.bind_cycle_forward) - 1);
+        } else if (strcmp(key, "bind_cycle_back") == 0) {
+            strncpy(config.bind_cycle_back, val, sizeof(config.bind_cycle_back) - 1);
         } else if (strcmp(key, "bind_switch_window_mod") == 0) {
             strncpy(config.bind_switch_window_mod, val, sizeof(config.bind_switch_window_mod) - 1);
         } else if (strcmp(key, "bind_reload") == 0) {

@@ -16,7 +16,6 @@ void spawn(const char *cmd);
 void toggle_bar(void);
 void request_close_client(int idx);
 
-#ifdef NO_SWITCHER
 static void cycle_client(int direction) {
   int index = current_client;
   if (index < 0 || index >= config.max_windows)
@@ -31,7 +30,6 @@ static void cycle_client(int direction) {
     }
   }
 }
-#endif
 
 static void grab_key(Display *dpy, Window root, KeyCode code,
                      unsigned int modifiers, Bool owner_events) {
@@ -71,6 +69,18 @@ void keys_grab(Display *dpy, Window root) {
         grab_key(dpy, root, code, mods | ShiftMask, False);
 #endif
     }
+  }
+
+  // Direct cycling remains available with or without the graphical switcher.
+  if (parse_key_combo(config.bind_cycle_forward, &mods, &sym)) {
+    KeyCode code = XKeysymToKeycode(dpy, sym);
+    if (code != 0)
+      grab_key(dpy, root, code, mods, True);
+  }
+  if (parse_key_combo(config.bind_cycle_back, &mods, &sym)) {
+    KeyCode code = XKeysymToKeycode(dpy, sym);
+    if (code != 0)
+      grab_key(dpy, root, code, mods, True);
   }
 
   // 3. Grab reload keybind
@@ -141,6 +151,20 @@ void keys_handle(Display *dpy, XKeyEvent *e) {
 #else
       window_switcher_start(mods, sym, backwards ? -1 : 1);
 #endif
+      return;
+    }
+  }
+
+  // Direct cycle bindings do not invoke the graphical switcher.
+  if (parse_key_combo(config.bind_cycle_forward, &mods, &sym)) {
+    if (key == sym && state == mods) {
+      cycle_client(1);
+      return;
+    }
+  }
+  if (parse_key_combo(config.bind_cycle_back, &mods, &sym)) {
+    if (key == sym && state == mods) {
+      cycle_client(-1);
       return;
     }
   }
