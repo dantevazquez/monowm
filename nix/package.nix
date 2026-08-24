@@ -81,7 +81,10 @@ stdenv.mkDerivation {
       install -Dm644 templates/switcher.conf -t "$out/share/monowm"
     ''}
 
-    patchShebangs "$out/bin" "$out/share/monowm/autostart"
+    # strictDeps keeps Bash out of HOST_PATH, so the default --host lookup
+    # leaves /bin/bash untouched.  Patch with the build-time interpreter
+    # before wrapProgram moves monowm-start to .monowm-start-wrapped.
+    patchShebangs --build "$out/bin"
     wrapProgram "$out/bin/monowm-start" \
       --set MONOWM_DEFAULTS_DIR "$out/share/monowm" \
       --prefix PATH : "$out/bin"

@@ -16,7 +16,9 @@ if [ -n "${MONOWM_DEFAULTS_DIR:-}" ] && [ -d "$MONOWM_DEFAULTS_DIR" ]; then
 fi
 
 if [ -x "$CONFIG_DIR/autostart" ]; then
-    "$CONFIG_DIR/autostart"
+    # Run it with this launcher's Nix-provided Bash.  Older Nix packages
+    # seeded autostart with #!/bin/bash, which does not exist on NixOS.
+    "$BASH" "$CONFIG_DIR/autostart"
 fi
 
 MONOWM_EXEC="monowm"
