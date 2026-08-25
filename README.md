@@ -149,7 +149,7 @@ Enable the X server and Monowm in `configuration.nix`:
 Changes take effect after `monowm --reload` or with ctrl f4.
 
 ## Coming soon...
-* Multi monitor support
+* Bug fixes
 
 ## Documentation
 
