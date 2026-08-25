@@ -2,8 +2,6 @@
 
 Lightweight window manger for x that can run with under 3mb of ram. This window manager follows the mobile workflow where one app/window always occupies the entire screen.
 
-If you want a complete out of the box arch system with monowm visit [monos](https://github.com/dantevazquez/monos).
-
 ![](demo.gif)
 
 ## How to install
