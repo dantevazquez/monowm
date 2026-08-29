@@ -2,7 +2,7 @@
 
 Lightweight x window manger. This window manager follows the mobile workflow where one app/window always occupies the entire screen.
 
-![](demo.gif)
+![Monowm](./screen.png)
 
 ### Features
 * Runs at 7.3 mb of ram with a bar and at 2.9 mb of ram with no bar on my system
@@ -66,7 +66,7 @@ services.xserver.enable = true;
 #### Optional Runtime Dependencies
 These are recommended for the default configuration:
 * [alacritty](https://github.com/alacritty/alacritty) (default terminal)
-* [dmenu](https://tools.suckless.org/dmenu/) (to launch applications)
+* [rofi](https://github.com/davatorium/rofi) (to launch applications)
 * [pipewire](https://pipewire.org/) (for volume control)
 * [brightnessctl](https://github.com/Hummer12007/brightnessctl) (to control screen brightness)
 * [dunst](https://github.com/dunst-project/dunst) (to see volume changes and low battery notifications)
@@ -137,14 +137,14 @@ Enable the X server and Monowm in `configuration.nix`:
   # Optional: start Monowm automatically instead of choosing it at login.
   services.displayManager.defaultSession = "none+monowm";
 
-  #Optional: Don't insall with recommend packages like alacritty, dmenu, xcompmgr, etc.
+  #Optional: Don't insall with recommend packages like alacritty, rofi, xcompmgr, etc.
   services.xserver.windowManager.monowm.recommendedPackages = false;
 }
 ```
 
 ## Configuration
 * Core configurations (bindings and custom hotkeys) can be configured in `~/.config/monowm/config.conf` (see template: [config.conf](templates/config.conf)). You can also find the default binds here.
-* The built-in bar is configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](templates/bar.conf)). Use `program_padding` for horizontal space inside open-program entries and `vertical_padding` for space above and below the text. `active_text_color` controls the text inside the focused entry; active highlights always fill the complete bar height.
+* The built-in bar is configured in `~/.config/monowm/bar.conf` (see template: [bar.conf](templates/bar.conf)). 
 * Startup commands and display settings can be customized in `~/.config/monowm/autostart` (see default: [autostart](autostart)).
 * Set status text without another bar process by changing the root window name.:
 
