@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # ==============================================================================
 # Monowm Autostart Script
@@ -9,14 +9,28 @@
 # Display Settings
 # DISPLAY_OUTPUT="eDP-1"
 # RESOLUTION="1920x1080"
-# DPI="96" #For high resolutions increase this for bigger text
+# DPI="96" # For high resolutions increase this for bigger text
 # IDLE_TIME=300 # Time it takes for screen to sleep in seconds (300 seconds = 5 minutes)
 #
-# xrandr --dpi $DPI
+# xrandr --dpi "$DPI"
 # xset s on
-# xset s $IDLE_TIME
+# xset s "$IDLE_TIME"
 # xset +dpms
-# xset dpms $IDLE_TIME $IDLE_TIME $IDLE_TIME
+# xset dpms "$IDLE_TIME" "$IDLE_TIME" "$IDLE_TIME"
 # if command -v xrandr >/dev/null 2>&1; then
 #     xrandr --output "$DISPLAY_OUTPUT" --mode "$RESOLUTION"
 # fi
+
+# Sync D-Bus environment before starting user services
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd --all
+fi
+
+# Set wallpaper
+if [ -f "$HOME/.config/monowm/bg.png" ]; then
+    xwallpaper --zoom "$HOME/.config/monowm/bg.png"
+fi
+
+# Daemons & Compositor (backgrounded)
+dunst &
+xcompmgr -n &

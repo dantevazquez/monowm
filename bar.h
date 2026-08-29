@@ -3,61 +3,69 @@
 
 #include "wm.h"
 #include <X11/Xlib.h>
-#include <sys/types.h>
 
 #ifdef NO_BAR
 
-static inline const char *get_client_icon(Display *dpy, Window w) {
-  (void)dpy;
-  (void)w;
-  return "";
+static inline void bar_init(Display *display, Window root_window, int width,
+                            int height) {
+  (void)display;
+  (void)root_window;
+  (void)width;
+  (void)height;
 }
 
-static inline void update_bar(Client *clients, int max_windows,
-                              int current_client, Display *dpy) {
+static inline void bar_reload(int width, int height) {
+  (void)width;
+  (void)height;
+}
+
+static inline void bar_screen_changed(int width, int height) {
+  (void)width;
+  (void)height;
+}
+
+static inline void bar_redraw(Client *clients, int max_windows,
+                              int current_client) {
   (void)clients;
   (void)max_windows;
   (void)current_client;
-  (void)dpy;
 }
 
-static inline void bar_start_refresh_thread(Client *clients, int max_windows,
-                                            int *current_client_ptr,
-                                            Display *dpy) {
+static inline void bar_handle_expose(const XExposeEvent *event,
+                                     Client *clients, int max_windows,
+                                     int current_client) {
+  (void)event;
   (void)clients;
   (void)max_windows;
-  (void)current_client_ptr;
-  (void)dpy;
+  (void)current_client;
 }
 
-static inline void bar_trigger_update(void) {}
+static inline void bar_handle_property(const XPropertyEvent *event,
+                                       Client *clients, int max_windows,
+                                       int current_client) {
+  (void)event;
+  (void)clients;
+  (void)max_windows;
+  (void)current_client;
+}
 
-static inline void spawn_lemonbar(Display *d) { (void)d; }
-
-static inline void kill_lemonbar(void) {}
+static inline int bar_is_visible(void) { return 0; }
+static inline int bar_height(void) { return 0; }
+static inline void bar_shutdown(void) {}
 
 #else
 
-// Get the icon string for a client window
-const char *get_client_icon(Display *dpy, Window w);
-
-// Update bar output (call when windows change)
-void update_bar(Client *clients, int max_windows, int current_client,
-                Display *dpy);
-
-// Start the periodic bar refresh thread
-void bar_start_refresh_thread(Client *clients, int max_windows,
-                              int *current_client_ptr, Display *dpy);
-
-// Trigger an immediate update of the bar (async-signal-safe)
-void bar_trigger_update(void);
-
-void spawn_lemonbar(Display *d);
-void kill_lemonbar(void);
-
-extern int runtime_bar_enabled;
-extern int lemonbar_pipe_fd;
-extern pid_t lemonbar_pid;
+void bar_init(Display *display, Window root_window, int width, int height);
+void bar_reload(int width, int height);
+void bar_screen_changed(int width, int height);
+void bar_redraw(Client *clients, int max_windows, int current_client);
+void bar_handle_expose(const XExposeEvent *event, Client *clients,
+                       int max_windows, int current_client);
+void bar_handle_property(const XPropertyEvent *event, Client *clients,
+                         int max_windows, int current_client);
+int bar_is_visible(void);
+int bar_height(void);
+void bar_shutdown(void);
 
 #endif
 

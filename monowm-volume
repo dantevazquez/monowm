@@ -26,5 +26,3 @@ else
                 -i audio-volume-high \
                 "Volume: ${VOLUME}%"
 fi
-
-pkill -USR1 -x monowm

@@ -8,7 +8,7 @@
 let
   cfg = config.services.xserver.windowManager.monowm;
   configuredDefaultPackage = monowmPackage.override {
-    inherit (cfg) withBar withSwitcher;
+    inherit (cfg) withBar;
   };
 in
 {
@@ -20,22 +20,16 @@ in
       default = configuredDefaultPackage;
       defaultText = lib.literalExpression ''
         monowm.packages.''${pkgs.system}.default.override {
-          inherit (config.services.xserver.windowManager.monowm) withBar withSwitcher;
+          inherit (config.services.xserver.windowManager.monowm) withBar;
         }
       '';
-      description = "The Monowm package to use. A custom package bypasses the withBar and withSwitcher options.";
+      description = "The Monowm package to use. A custom package bypasses the withBar option.";
     };
 
     withBar = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to compile and install Monowm's built-in bar and lemonbar.";
-    };
-
-    withSwitcher = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Whether to compile the graphical window switcher.";
+      description = "Whether to compile Monowm with its built-in bar.";
     };
 
     extraSessionCommands = lib.mkOption {
@@ -76,7 +70,7 @@ in
       [
         brightnessctl
         dbus
-        dmenu
+        rofi
         dunst
         xwallpaper
         xcompmgr

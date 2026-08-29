@@ -4,17 +4,8 @@
   makeWrapper,
   pkg-config,
   libX11,
-  libXcomposite,
-  libXrender,
-  libxcb,
   libXft,
-  libXinerama,
-  libXrandr,
-  libXext,
-  freetype,
-  fontconfig,
   withBar ? true,
-  withSwitcher ? true,
 }:
 
 stdenv.mkDerivation {
@@ -27,8 +18,7 @@ stdenv.mkDerivation {
       path: type:
       let
         name = baseNameOf (toString path);
-        isBuildArtifact =
-          type == "regular" && (name == "monowm" || name == "lemonbar" || lib.hasSuffix ".o" name);
+        isBuildArtifact = type == "regular" && (name == "monowm" || lib.hasSuffix ".o" name);
       in
       lib.cleanSourceFilter path type && !isBuildArtifact;
   };
@@ -38,47 +28,23 @@ stdenv.mkDerivation {
     pkg-config
   ];
 
-  buildInputs = [
-    libX11
-  ]
-  ++ lib.optionals (withBar || withSwitcher) [
-    libXrender
-    libXft
-  ]
-  ++ lib.optionals withSwitcher [ libXcomposite ]
-  ++ lib.optionals withBar [
-    libxcb
-    libXinerama
-    libXrandr
-    libXext
-    freetype
-    fontconfig
-  ];
+  buildInputs = [ libX11 ] ++ lib.optionals withBar [ libXft ];
 
   strictDeps = true;
   dontConfigure = true;
 
-  makeFlags = [
-    "NOBAR=${if withBar then "0" else "1"}"
-    "NOSWITCHER=${if withSwitcher then "0" else "1"}"
-  ];
+  makeFlags = [ "NOBAR=${if withBar then "0" else "1"}" ];
 
   installPhase = ''
     runHook preInstall
 
     install -Dm755 monowm monowm-start monowm-volume monowm-brightness \
       -t "$out/bin"
-    ${lib.optionalString withBar ''
-      install -Dm755 lemonbar -t "$out/bin"
-    ''}
     install -Dm644 monowm.desktop "$out/share/xsessions/monowm.desktop"
     install -Dm644 templates/config.conf autostart bg.png \
       -t "$out/share/monowm"
     ${lib.optionalString withBar ''
       install -Dm644 templates/bar.conf -t "$out/share/monowm"
-    ''}
-    ${lib.optionalString withSwitcher ''
-      install -Dm644 templates/switcher.conf -t "$out/share/monowm"
     ''}
 
     # strictDeps keeps Bash out of HOST_PATH, so the default --host lookup

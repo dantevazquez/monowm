@@ -1,8 +1,7 @@
 #define _GNU_SOURCE
-#include "appicons.h"
 #include "bar.h"
 #include "keys.h"
-#include "window_switcher.h"
+#include "wm.h"
 #include <X11/X.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -10,14 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
 #include "config.h"
-
-int runtime_bar_enabled = 0;
-int lemonbar_height = 0;
 
 Display *dpy;
 Window root;
@@ -30,35 +25,28 @@ Atom monowm_reload;
 Window wm_check_win;
 static uint64_t focus_sequence = 0;
 
+static int client_y(void) {
+  return bar_is_visible() && config.bar_position == 't' ? bar_height() : 0;
+}
+
+static int client_height(void) {
+  int height = screen_height - bar_height();
+  return height > 0 ? height : 1;
+}
+
+static void relayout_clients(void) {
+  for (int i = 0; i < config.max_windows; i++) {
+    if (clients[i].active) {
+      XMoveResizeWindow(dpy, clients[i].win, 0, client_y(), screen_width,
+                        client_height());
+    }
+  }
+}
+
 int x_error_handler(Display *d, XErrorEvent *e) {
   (void)d;
   (void)e;
   return 0;
-}
-
-void handle_sigusr1(int sig) {
-  (void)sig;
-  bar_trigger_update();
-}
-
-int is_command_in_path(const char *cmd) {
-  char *path = getenv("PATH");
-  if (!path) return 0;
-  char *path_copy = strdup(path);
-  if (!path_copy) return 0;
-  char *dir = strtok(path_copy, ":");
-  int found = 0;
-  while (dir) {
-    char full_path[1024];
-    snprintf(full_path, sizeof(full_path), "%s/%s", dir, cmd);
-    if (access(full_path, X_OK) == 0) {
-      found = 1;
-      break;
-    }
-    dir = strtok(NULL, ":");
-  }
-  free(path_copy);
-  return found;
 }
 
 void update_client_list() {
@@ -81,53 +69,6 @@ void update_active_window() {
                   (unsigned char *)&w, 1);
 }
 
-double get_dpi(Display *d) {
-  Display *temp_dpy = XOpenDisplay(NULL);
-  Display *target_d = temp_dpy ? temp_dpy : d;
-
-  char *dpi_str = XGetDefault(target_d, "Xft", "dpi");
-  double dpi = 96.0;
-  if (dpi_str) {
-    double parsed = atof(dpi_str);
-    if (parsed > 0) {
-      dpi = parsed;
-    }
-  } else {
-    int screen = DefaultScreen(target_d);
-    double height_mm = DisplayHeightMM(target_d, screen);
-    if (height_mm > 0) {
-      dpi = (DisplayHeight(target_d, screen) * 25.4) / height_mm;
-    }
-  }
-
-  if (temp_dpy) {
-    XCloseDisplay(temp_dpy);
-  }
-  return dpi;
-}
-
-int get_scaled_bar_height(Display *d) {
-  double dpi = get_dpi(d);
-  int font_size = (int)(config.bar_font_size * (dpi / 96.0) + 0.5);
-  int height = font_size * 2;
-  if (height < 10) height = 10;
-  return height;
-}
-
-int get_scaled_font_size(Display *d) {
-  double dpi = get_dpi(d);
-  int font_size = (int)(config.bar_font_size * (dpi / 96.0) + 0.5);
-  if (font_size < 4) font_size = 4;
-  return font_size;
-}
-
-int get_client_y() {
-  if (runtime_bar_enabled && config.bar_position == 'b') {
-    return 0;
-  }
-  return lemonbar_height;
-}
-
 void spawn(const char *cmd) {
   pid_t pid = fork();
   if (pid == 0) {
@@ -144,72 +85,23 @@ void spawn(const char *cmd) {
 }
 
 void reload_config() {
-  window_switcher_cancel();
+  keys_cancel_mru(dpy);
   config_load();
-  window_switcher_reload_config();
   if (config.max_windows > 128) {
     config.max_windows = 128;
   }
 
-#ifdef NO_BAR
-  runtime_bar_enabled = 0;
-  lemonbar_height = 0;
-#else
-  kill_lemonbar();
-  if (config.bar_enabled && is_command_in_path("lemonbar")) {
-    runtime_bar_enabled = 1;
-    lemonbar_height = get_scaled_bar_height(dpy);
-    spawn_lemonbar(dpy);
-  } else {
-    runtime_bar_enabled = 0;
-    lemonbar_height = 0;
-  }
-#endif
-
   XUngrabKey(dpy, AnyKey, AnyModifier, root);
   keys_grab(dpy, root);
 
-  for (int i = 0; i < config.max_windows; i++) {
-    if (clients[i].active) {
-      XMoveResizeWindow(dpy, clients[i].win, 0, get_client_y(), screen_width,
-                        screen_height - lemonbar_height);
-    }
-  }
+  bar_reload(screen_width, screen_height);
+  relayout_clients();
+  bar_redraw(clients, config.max_windows, current_client);
 
-  update_bar(clients, config.max_windows, current_client, dpy);
   printf("monowm: configuration reloaded\n");
 }
 
-void toggle_bar() {
-#ifdef NO_BAR
-  return;
-#else
-  config.bar_enabled = !config.bar_enabled;
-  if (config.bar_enabled && is_command_in_path("lemonbar")) {
-    runtime_bar_enabled = 1;
-    lemonbar_height = get_scaled_bar_height(dpy);
-    spawn_lemonbar(dpy);
-    bar_start_refresh_thread(clients, config.max_windows, &current_client, dpy);
-  } else {
-    runtime_bar_enabled = 0;
-    lemonbar_height = 0;
-    kill_lemonbar();
-  }
-
-  for (int i = 0; i < config.max_windows; i++) {
-    if (clients[i].active) {
-      XMoveResizeWindow(dpy, clients[i].win, 0, get_client_y(), screen_width,
-                        screen_height - lemonbar_height);
-    }
-  }
-  bar_trigger_update();
-#endif
-}
-
 void setup() {
-  signal(SIGUSR1, handle_sigusr1);
-  signal(SIGPIPE, SIG_IGN);
-
   XSetErrorHandler(x_error_handler);
   dpy = XOpenDisplay(NULL);
   if (!dpy) {
@@ -229,20 +121,6 @@ void setup() {
     fprintf(stderr, "Out of memory\n");
     exit(1);
   }
-
-#ifdef NO_BAR
-  runtime_bar_enabled = 0;
-  lemonbar_height = 0;
-#else
-  if (config.bar_enabled && is_command_in_path("lemonbar")) {
-    runtime_bar_enabled = 1;
-    lemonbar_height = get_scaled_bar_height(dpy);
-    spawn_lemonbar(dpy);
-  } else {
-    runtime_bar_enabled = 0;
-    lemonbar_height = 0;
-  }
-#endif
 
   net_wm_window_type = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
   net_wm_window_type_dock = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
@@ -279,24 +157,26 @@ void setup() {
     clients[i].active = 0;
     clients[i].ignore_unmap = 0;
     clients[i].focus_serial = 0;
+#ifndef NO_BAR
+    clients[i].bar_icon = NULL;
+    clients[i].bar_name[0] = '\0';
+#endif
   }
 
-  XSelectInput(dpy, root,
-               SubstructureRedirectMask | SubstructureNotifyMask |
-                   StructureNotifyMask | KeyPressMask | KeyReleaseMask);
+  long root_event_mask = SubstructureRedirectMask | SubstructureNotifyMask |
+                         StructureNotifyMask | KeyPressMask | KeyReleaseMask;
+#ifndef NO_BAR
+  root_event_mask |= PropertyChangeMask;
+#endif
+  XSelectInput(dpy, root, root_event_mask);
 
-  window_switcher_init(dpy, root);
   keys_grab(dpy, root);
+
+  bar_init(dpy, root, screen_width, screen_height);
+  bar_redraw(clients, config.max_windows, current_client);
 
   XSync(dpy, False);
 
-  for (int i = 0; i < config.autostart_count; i++) {
-    spawn(config.autostarts[i]);
-  }
-
-  bar_start_refresh_thread(clients, config.max_windows, &current_client, dpy);
-
-  update_bar(clients, config.max_windows, current_client, dpy);
 }
 
 int add_client(Window w) {
@@ -311,6 +191,10 @@ int add_client(Window w) {
       clients[i].active = 1;
       clients[i].ignore_unmap = 0;
       clients[i].focus_serial = 0;
+#ifndef NO_BAR
+      clients[i].bar_icon = NULL;
+      clients[i].bar_name[0] = '\0';
+#endif
       update_client_list();
       return i;
     }
@@ -318,18 +202,19 @@ int add_client(Window w) {
   return -1;
 }
 
-void focus_client(int idx) {
+static void focus_client_internal(int idx, int record_history) {
   if (idx < 0 || idx >= config.max_windows || !clients[idx].active)
     return;
 
-  XMoveResizeWindow(dpy, clients[idx].win, 0, get_client_y(), screen_width,
-                    screen_height - lemonbar_height);
+  XMoveResizeWindow(dpy, clients[idx].win, 0, client_y(), screen_width,
+                    client_height());
 
 #if !KEEP_INACTIVE_MAPPED
   int old_client = current_client;
 #endif
   current_client = idx;
-  clients[idx].focus_serial = ++focus_sequence;
+  if (record_history)
+    clients[idx].focus_serial = ++focus_sequence;
 
   XMapWindow(dpy, clients[idx].win);
   XRaiseWindow(dpy, clients[idx].win);
@@ -344,9 +229,20 @@ void focus_client(int idx) {
 #endif
 
   update_active_window();
-  update_bar(clients, config.max_windows, current_client, dpy);
-  if (window_switcher_is_active())
-    window_switcher_screen_changed();
+  bar_redraw(clients, config.max_windows, current_client);
+}
+
+void focus_client(int idx) {
+  focus_client_internal(idx, 1);
+}
+
+void focus_client_preview(int idx) {
+  focus_client_internal(idx, 0);
+}
+
+void commit_client_focus(int idx) {
+  if (idx >= 0 && idx < config.max_windows && clients[idx].active)
+    clients[idx].focus_serial = ++focus_sequence;
 }
 
 void request_close_client(int idx) {
@@ -403,7 +299,6 @@ void remove_client(int idx) {
   if (idx < 0 || idx >= config.max_windows || !clients[idx].active)
     return;
 
-  Window removed_window = clients[idx].win;
   int removed_current = current_client == idx;
   for (int i = idx; i < config.max_windows - 1; i++) {
     clients[i] = clients[i + 1];
@@ -412,6 +307,10 @@ void remove_client(int idx) {
   clients[config.max_windows - 1].active = 0;
   clients[config.max_windows - 1].ignore_unmap = 0;
   clients[config.max_windows - 1].focus_serial = 0;
+#ifndef NO_BAR
+  clients[config.max_windows - 1].bar_icon = NULL;
+  clients[config.max_windows - 1].bar_name[0] = '\0';
+#endif
 
   update_client_list();
 
@@ -423,16 +322,12 @@ void remove_client(int idx) {
     } else {
       current_client = -1;
       update_active_window();
-      update_bar(clients, config.max_windows, current_client, dpy);
     }
   } else if (current_client > idx) {
     current_client--;
     update_active_window();
-    update_bar(clients, config.max_windows, current_client, dpy);
-  } else {
-    update_bar(clients, config.max_windows, current_client, dpy);
   }
-  window_switcher_client_removed(removed_window);
+  bar_redraw(clients, config.max_windows, current_client);
 }
 
 void handle_client_message(XClientMessageEvent *e) {
@@ -455,8 +350,10 @@ void manage_window(Window w) {
     return;
   }
 
-  XMoveResizeWindow(dpy, w, 0, get_client_y(), screen_width,
-                    screen_height - lemonbar_height);
+#ifndef NO_BAR
+  XSelectInput(dpy, w, PropertyChangeMask);
+#endif
+  XMoveResizeWindow(dpy, w, 0, client_y(), screen_width, client_height());
 
   XSetWindowBorderWidth(dpy, w, 0);
 
@@ -466,7 +363,6 @@ void manage_window(Window w) {
   XSetWindowBackgroundPixmap(dpy, w, None);
 #endif
 
-  window_switcher_client_added(w);
   focus_client(idx);
 }
 
@@ -486,19 +382,7 @@ int is_dock(Window w) {
       return 1;
   }
 
-  XClassHint ch;
-  int result = 0;
-  if (XGetClassHint(dpy, w, &ch)) {
-    if (ch.res_name && (strcmp(ch.res_name, "lemonbar") == 0 ||
-                        strcmp(ch.res_name, "bar") == 0)) {
-      result = 1;
-    }
-    if (ch.res_name)
-      XFree(ch.res_name);
-    if (ch.res_class)
-      XFree(ch.res_class);
-  }
-  return result;
+  return 0;
 }
 
 void handle_map_request(XMapRequestEvent *e) {
@@ -561,41 +445,6 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  if (argc > 1 && strcmp(argv[1], "--is-bar-enabled") == 0) {
-#ifdef NO_BAR
-    return 1;
-#else
-    return config.bar_enabled ? 0 : 1;
-#endif
-  }
-
-  if (argc > 1 && strcmp(argv[1], "--get-bar-height") == 0) {
-#ifdef NO_BAR
-    printf("0\n");
-    return 0;
-#else
-    Display *d = XOpenDisplay(NULL);
-    if (!d) {
-      printf("%d\n", config.bar_font_size * 2);
-      return 0;
-    }
-    printf("%d\n", get_scaled_bar_height(d));
-    XCloseDisplay(d);
-    return 0;
-#endif
-  }
-
-  if (argc > 1 && strcmp(argv[1], "--get-bar-font") == 0) {
-    Display *d = XOpenDisplay(NULL);
-    if (!d) {
-      printf("%s:size=%d\n", config.bar_font_name, config.bar_font_size);
-      return 0;
-    }
-    printf("%s:size=%d\n", config.bar_font_name, get_scaled_font_size(d));
-    XCloseDisplay(d);
-    return 0;
-  }
-
   setup();
 
   XEvent ev;
@@ -607,13 +456,9 @@ int main(int argc, char *argv[]) {
       if (ev.xconfigure.window == root) {
         screen_width = ev.xconfigure.width;
         screen_height = ev.xconfigure.height;
-        for (int i = 0; i < config.max_windows; i++) {
-          if (clients[i].active) {
-            XMoveResizeWindow(dpy, clients[i].win, 0, get_client_y(), screen_width,
-                              screen_height - lemonbar_height);
-          }
-        }
-        window_switcher_screen_changed();
+        bar_screen_changed(screen_width, screen_height);
+        relayout_clients();
+        bar_redraw(clients, config.max_windows, current_client);
       }
       break;
     case MapRequest:
@@ -632,7 +477,12 @@ int main(int argc, char *argv[]) {
       keys_handle_release(dpy, &ev.xkey);
       break;
     case Expose:
-      window_switcher_handle_expose(&ev.xexpose);
+      bar_handle_expose(&ev.xexpose, clients, config.max_windows,
+                        current_client);
+      break;
+    case PropertyNotify:
+      bar_handle_property(&ev.xproperty, clients, config.max_windows,
+                          current_client);
       break;
     case ClientMessage:
       handle_client_message(&ev.xclient);
@@ -640,8 +490,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  bar_shutdown();
   XCloseDisplay(dpy);
-  kill_lemonbar();
   if (clients) free(clients);
   return 0;
 }
